@@ -38,7 +38,7 @@ control whether the commands perform a settling sample independently of the
 #### Examples for Settling Probe
 
 In your printer.cfg file add the `settling_probe` section:
-```gcode
+```
 [settling_probe]
 settling_sample: True
 ```
