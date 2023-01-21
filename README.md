@@ -43,8 +43,8 @@ In your printer.cfg file add the `settling_probe` section:
 settling_sample: True
 ```
 
-The in the Mainsail/Fluidd UI console panel perform the following commands:
-```gcode
+With in the Mainsail/Fluidd UI console panel, you can perform any of the following commands:
+```
 PROBE
 PROBE SETTLING_SAMPLE=0
 PROBE SETTLING_SAMPLE=1
@@ -78,7 +78,7 @@ I've modified it to add support for custom GCode execution on either success
 or failure:
 
 #### Usage
-```gcode
+```
 [gcode_shell_command COMMAND]
 #value_<var>: <value>
 #   Output value that can be updated by the command. <value>
@@ -110,7 +110,7 @@ command:
 #   reference the value_* values.
 ```
 #### Examples
-```gcode
+```
 [gcode_shell_command my_command]
 command: echo my_command executing
 success:
@@ -123,7 +123,7 @@ gcode:
     RUN_SHELL_COMMAND CMD=my_command
 ```
 
-```gcode
+```
 [gcode_shell_command my_command]
 value_var1: 0
 command: echo "VALUE_UPDATE:var1=10"
@@ -140,7 +140,7 @@ success:
 >
 > For example, the following will cause an infinite loop:
 >
-> ```gcode
+> ```
 > [gcode_shell_command my_command]
 > command: echo my_command executing
 > success:
@@ -151,7 +151,9 @@ success:
 >     RUN_SHELL_COMMAND CMD=my_command
 > ```
 
-### How To Install `Settling Probe` and `Gcode Shell Command` Extensions
+---
+
+### How To Install Settling Probe and Gcode Shell Command Extensions
 
 To install these extensions, you need to copy the `settling_probe.py` file and `gcode_shell_command.py` into the `extras` folder of klipper. Like:
 
@@ -170,7 +172,8 @@ git clone https://github.com/voidtrance/voron-klipper-extensions
 
 ---
 
-## Moonraker's `Update Manager` setting
+## Moonraker's Update Manager setting:
+
 Add the following section to `moonraker.conf`:
 ```
 [update_manager voron-klipper-extensions]
