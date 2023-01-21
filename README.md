@@ -33,7 +33,7 @@ To enable the module, add the following to your `printer.cfg` file:
 The module also augments the `PROBE`, `PROBE_ACCURACY`, and `PROBE_CALIBRATE`
 commands with an extra parameter - `SETTLING_SAMPLE` - which can be used to
 control whether the commands perform a settling sample independently of the
-`settling_sample` setting.
+`settling_sample` setting in the `[settling_prob]` section
 
 #### Examples for Settling Probe
 
