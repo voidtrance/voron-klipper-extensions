@@ -26,13 +26,13 @@ To enable the module, add the following to your `printer.cfg` file:
 #settling_sample:
 #   Globally enable the throw-away settling sample. Default is 'False'.
 #   Setting this to 'True' will enable the throw-away sample for all
-#   commands/operations that perform Z probing (QGL, Z tilt, Bed Mesh,
-#   Screw Tile, etc.)
+#   commands/operations that perform Z probing (QUAD_GANTRY_LEVEL, 
+#   Z_TILT_ADJUST, BED_MESH_CALIBRATE, SCREWS_TILT_CALCULATE, etc.)
 ```
 
 The module also augments the `PROBE`, `PROBE_ACCURACY`, and `PROBE_CALIBRATE`
 commands with an extra parameter - `SETTLING_SAMPLE` - which can be used to
-control whether the commands perform a settling sample independently from the
+control whether the commands performs a settling sample independently from the
 `settling_sample` setting.
 
 ### GCode Shell Command

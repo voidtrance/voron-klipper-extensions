@@ -26,6 +26,13 @@ function link_extension() {
     done
 }
 
+# Step 3: restarting Klipper
+function restart_klipper()
+{
+    echo "Restarting Klipper..."
+    sudo systemctl restart klipper
+}
+
 function verify_ready() {
     if [ "$(id -u)" -eq 0 ]; then
         echo "This script must not run as root"
@@ -41,3 +48,4 @@ done
 
 verify_ready
 link_extension
+restart_klipper
