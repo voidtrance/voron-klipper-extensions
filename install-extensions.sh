@@ -29,7 +29,7 @@ function link_gcode_shell_command_extension()
 function link_settling_probe_command_extension()
 {
     echo "Linking extension to Klipper..."
-    ln -sf "${SRCDIR}/gcode_shell_command.py" "${KLIPPER_PATH}/klippy/extras/gcode_shell_command.py"
+    ln -sf "${SRCDIR}/settling_probe.py" "${KLIPPER_PATH}/klippy/extras/settling_probe.py"
 }
 
 ### Step 2: Link extension to Klipper
