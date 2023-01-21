@@ -80,7 +80,7 @@ class SettlingProbe(probe.PrinterProbe):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
         global_settling_sample = self.settling_sample
         self.settling_sample = settling_sample
-        ret = probe.PrinterProbe.cmd_CALIBRATE(self, gcmd)
+        ret = probe.PrinterProbe.cmd_PROBE_CALIBRATE(self, gcmd)
         self.settling_sample = global_settling_sample
         return ret
 
