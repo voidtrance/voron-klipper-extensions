@@ -26,14 +26,50 @@ To enable the module, add the following to your `printer.cfg` file:
 #settling_sample:
 #   Globally enable the throw-away settling sample. Default is 'False'.
 #   Setting this to 'True' will enable the throw-away sample for all
-#   commands/operations that perform Z probing (QUAD_GANTRY_LEVEL, 
+#   commands/operations that perform Z probing (QUAD_GANTRY_LEVEL,
 #   Z_TILT_ADJUST, BED_MESH_CALIBRATE, SCREWS_TILT_CALCULATE, etc.)
 ```
 
 The module also augments the `PROBE`, `PROBE_ACCURACY`, and `PROBE_CALIBRATE`
 commands with an extra parameter - `SETTLING_SAMPLE` - which can be used to
-control whether the commands performs a settling sample independently from the
+control whether the commands perform a settling sample independently of the
 `settling_sample` setting.
+
+#### Examples for Settling Probe
+
+In your printer.cfg file add the ``settling_probe`` section:
+```gcode
+[settling_probe]
+settling_sample: True
+```
+
+The in the Mainsail/Fluidd UI console panel perform the following commands:
+```gcode
+PROBE
+PROBE SETTLING_SAMPLE=0
+PROBE SETTLING_SAMPLE=1
+
+PROBE_ACCURACY
+PROBE_ACCURACY SETTLING_SAMPLE=0
+PROBE_ACCURACY SETTLING_SAMPLE=1
+
+PROBE_CALIBRATE
+PROBE_CALIBRATE SETTLING_SAMPLE=0
+PROBE_CALIBRATE SETTLING_SAMPLE=1
+
+QUAD_GANTRY_LEVEL
+BED_MESH_CALIBRATE
+```
+
+The commands ``QUAD_GANTRY_LEVEL`` and ``BED_MESH_CALIBRATE`` will ignore the first sample if ``settling_sample:`` option is set to ``True`` in the ``[settling_probe]`` section.  If ``settling_sample:`` option is set to ``False`` then all the commands will use the DEFAULT Klipper behavior and include the first sample.
+
+The following commands are not effected by ``Settling_Probe`` extension:
+```gcode
+PROBE_Z_ACCURACY
+CALIBRATE_Z
+```
+
+---
 
 ### GCode Shell Command
 The original extension is part of the Kiauh repo
@@ -109,13 +145,32 @@ success:
 > command: echo my_command executing
 > success:
 >     exec_my_command
-> 
+>
 > [gcode_macro exec_my_command]
 > gcode:
 >     RUN_SHELL_COMMAND CMD=my_command
 > ```
 
-## Installation
+### How To Install ``Settling Probe`` and ``Gcode Shell Command`` Extensions
+
+To install these extensions, you need to copy the `settling_probe.py` file and  ``gcode_shell_command.py`` into the `extras` folder of klipper. Like:
+
+```bash
+/home/pi/klipper/klippy/extras/settling_probe.py
+/home/pi/klipper/klippy/extras/gcode_shell_command.py
+```
+
+An alternative would be to clone this repo and run the `install-extensions.sh` script. Like:
+
+```bash
+cd /home/pi
+git clone https://github.com/voidtrance/voron-klipper-extensions
+./voron-klipper-extensions/install-extensions.sh
+```
+
+---
+
+## Moonraker's ``Update Manager`` setting
 Add the following section to `moonraker.conf`:
 ```
 [update_manager voron-klipper-extensions]
