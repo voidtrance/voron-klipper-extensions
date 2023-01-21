@@ -18,13 +18,27 @@ function check_klipper() {
     fi
 }
 
-# Step 2: Link extension to Klipper
-function link_extension() {
-    echo "Linking extensions to Klipper..."
-    for extension in ${EXTENSION_LIST}; do
-        ln -sf "${SRCDIR}/${extensions}" "${KLIPPER_PATH}/klippy/extras/${extension}"
-    done
+# Step 2: Link gcode_shell_command.py file to Klipper
+function link_gcode_shell_command_extension()
+{
+    echo "Linking extension to Klipper..."
+    ln -sf "${SRCDIR}/gcode_shell_command.py" "${KLIPPER_PATH}/klippy/extras/gcode_shell_command.py"
 }
+
+# Step 2: Link settling_probe.py file to Klipper
+function link_settling_probe_command_extension()
+{
+    echo "Linking extension to Klipper..."
+    ln -sf "${SRCDIR}/gcode_shell_command.py" "${KLIPPER_PATH}/klippy/extras/gcode_shell_command.py"
+}
+
+### Step 2: Link extension to Klipper
+##function link_extension() {
+##    echo "Linking extensions to Klipper..."
+##    for extension in ${EXTENSION_LIST}; do
+##        ln -sf "${SRCDIR}/${extensions}" "${KLIPPER_PATH}/klippy/extras/${extension}"
+##    done
+##}
 
 # Step 3: restarting Klipper
 function restart_klipper()
@@ -47,5 +61,7 @@ while getopts "k:" arg; do
 done
 
 verify_ready
-link_extension
+#link_extension
+link_gcode_shell_command_extension
+link_settling_probe_command_extension
 restart_klipper
