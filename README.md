@@ -21,7 +21,7 @@ benefit from this.
 
 To enable the module, add the following to your `printer.cfg` file:
 
-```gcode
+```
 [settling_probe]
 #settling_sample:
 #   Globally enable the throw-away settling sample. Default is 'False'.
