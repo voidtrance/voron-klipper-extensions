@@ -131,7 +131,7 @@ success:
     {action_respnd_info("var1=%s" % var1)}
 ```
 
-> **Warning** **Infinite Loops**
+## **Warning** **Infinite Loops**
 >
 > Since the G-Code executed on success/failure can be arbitrary, on top of
 > all the other issues resulting from using external commands, it is now
