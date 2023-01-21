@@ -33,11 +33,11 @@ To enable the module, add the following to your `printer.cfg` file:
 The module also augments the `PROBE`, `PROBE_ACCURACY`, and `PROBE_CALIBRATE`
 commands with an extra parameter - `SETTLING_SAMPLE` - which can be used to
 control whether the commands perform a settling sample independently of the
-`settling_sample` setting in the `[settling_prob]` section
+`settling_sample` setting in the `[settling_prob]` section.
 
 #### Examples for Settling Probe
 
-In your printer.cfg file add the ``settling_probe`` section:
+In your printer.cfg file add the `settling_probe` section:
 ```gcode
 [settling_probe]
 settling_sample: True
@@ -61,9 +61,9 @@ QUAD_GANTRY_LEVEL
 BED_MESH_CALIBRATE
 ```
 
-The commands ``QUAD_GANTRY_LEVEL`` and ``BED_MESH_CALIBRATE`` will ignore the first sample if ``settling_sample:`` option is set to ``True`` in the ``[settling_probe]`` section.  If ``settling_sample:`` option is set to ``False`` then all the commands will use the DEFAULT Klipper behavior and include the first sample.
+The commands `QUAD_GANTRY_LEVEL` and `BED_MESH_CALIBRATE` will ignore the first sample if `settling_sample:` option is set to `True` in the `[settling_probe]` section.  If `settling_sample:` option is set to `False` then all the commands will use the DEFAULT Klipper behavior and include the first sample.
 
-The following commands are not effected by ``Settling_Probe`` extension:
+The following commands are not effected by `Settling_Probe` extension:
 ```gcode
 PROBE_Z_ACCURACY
 CALIBRATE_Z
@@ -151,9 +151,9 @@ success:
 >     RUN_SHELL_COMMAND CMD=my_command
 > ```
 
-### How To Install ``Settling Probe`` and ``Gcode Shell Command`` Extensions
+### How To Install `Settling Probe` and `Gcode Shell Command` Extensions
 
-To install these extensions, you need to copy the `settling_probe.py` file and  ``gcode_shell_command.py`` into the `extras` folder of klipper. Like:
+To install these extensions, you need to copy the `settling_probe.py` file and `gcode_shell_command.py` into the `extras` folder of klipper. Like:
 
 ```bash
 /home/pi/klipper/klippy/extras/settling_probe.py
@@ -170,7 +170,7 @@ git clone https://github.com/voidtrance/voron-klipper-extensions
 
 ---
 
-## Moonraker's ``Update Manager`` setting
+## Moonraker's `Update Manager` setting
 Add the following section to `moonraker.conf`:
 ```
 [update_manager voron-klipper-extensions]
