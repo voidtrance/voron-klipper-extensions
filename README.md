@@ -43,7 +43,7 @@ In your printer.cfg file add the `settling_probe` section:
 settling_sample: True
 ```
 
-With in the Mainsail/Fluidd UI console panel, you can perform any of the following commands:
+Within the Mainsail/Fluidd UI console panel, you can perform any of the following commands:
 ```
 PROBE
 PROBE SETTLING_SAMPLE=0
