@@ -125,3 +125,7 @@ origin: https://github.com/voidtrance/voron-klipper-extensions.git
 install_script: install-extensions.sh
 managed_services: klipper
 ```
+
+## Contributing
+If you'd like to contribute, please submit a pull request with your suggested
+changes. When submitting changes, please follow the [coding style](coding-style.md).
