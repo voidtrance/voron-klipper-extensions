@@ -19,7 +19,8 @@ The extension replaces the default `probe` Klipper object with the modified
 one in order to allow all commands/operations that perform Z probing to
 benefit from this.
 
-To enable the module, add the following to your `printer.cfg` file:
+To enable the module, add the following to your `printer.cfg` file right after
+the `[probe]` section:
 
 ```gcode
 [settling_probe]
@@ -27,7 +28,7 @@ To enable the module, add the following to your `printer.cfg` file:
 #   Globally enable the throw-away settling sample. Default is 'False'.
 #   Setting this to 'True' will enable the throw-away sample for all
 #   commands/operations that perform Z probing (QGL, Z tilt, Bed Mesh,
-#   Screw Tile, etc.)
+#   Screw Tilt, etc.)
 ```
 
 The module also augments the `PROBE`, `PROBE_ACCURACY`, and `PROBE_CALIBRATE`
@@ -116,7 +117,20 @@ success:
 > ```
 
 ## Installation
-Add the following section to `moonraker.conf`:
+1. Login to your RaspberryPi.
+2. Clone this repository:
+```sh
+git clone https://github.com/voidtrance/voron-klipper-extensions.git
+```
+3. Change directory to the new cloned repository:
+```sh
+cd voron-klipper-extensions
+```
+4. Run the install script:
+```sh
+./install-extensions.sh
+```
+5. Add the following section to `moonraker.conf`:
 ```
 [update_manager voron-klipper-extensions]
 type: git_repo

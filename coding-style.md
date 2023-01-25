@@ -25,5 +25,5 @@ Single line short descriptions
 
 Long description explaining the changes. This should
 explain the motivation behind the changes, not what changed.
-This "Why?", not "What?"
+Think "Why?", not "What?"
 ```
