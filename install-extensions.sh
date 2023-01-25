@@ -18,7 +18,18 @@ function check_klipper() {
     fi
 }
 
-# Step 2: Link extension to Klipper
+# Step 2: Check if the extensions are already present.
+# This is a way to check if this is the initial installation.
+function check_existing() {
+    local -i existing=0
+    for extension in ${EXTENSION_LIST}; do
+        [ -e "${KLIPPER_PATH}/klippy/extras/${extension}" ] && existing=1 || existing=0
+        [ ${existing} -eq 0 ] && break
+    done
+    echo ${existing}
+}
+
+# Step 3: Link extension to Klipper
 function link_extension() {
     echo "Linking extensions to Klipper..."
     for extension in ${EXTENSION_LIST}; do
@@ -26,9 +37,8 @@ function link_extension() {
     done
 }
 
-# Step 3: restarting Klipper
-function restart_klipper()
-{
+# Step 4: Optionally, restarting Klipper
+function restart_klipper() {
     echo "Restarting Klipper..."
     sudo systemctl restart klipper
 }
@@ -47,5 +57,9 @@ while getopts "k:" arg; do
 done
 
 verify_ready
+existing_install=$(check_existing)
 link_extension
-restart_klipper
+if [ ${existing_install} -eq 0 ]; then
+    restart_klipper
+fi
+exit 0
