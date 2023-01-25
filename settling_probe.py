@@ -6,18 +6,20 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import probe
 import pins
+import configparser
 
 
 class SettlingProbe(probe.PrinterProbe):
     def __init__(self, config):
         self.printer = config.get_printer()
         probe_config = config.getsection('probe')
-        probe_obj = self.printer.lookup_object('probe')
 
-        if probe_obj:
+        try:
+            probe_obj = self.printer.lookup_object('probe')
             mcu_probe = probe_obj.mcu_probe
-        else:
-            mcu_probe = probe.ProbeEndstopWrapper(config)
+        except configparser.Error:
+            raise configparser.Error(
+                "Section 'settling_probe' should appear after 'probe' section")
 
         # Unregister any pre-existing probe commands first.
         gcode = self.printer.lookup_object('gcode')
@@ -27,10 +29,11 @@ class SettlingProbe(probe.PrinterProbe):
         gcode.register_command('PROBE_ACCURACY', None)
         gcode.register_command('Z_OFFSET_APPLY_PROBE', None)
 
+        # Remove the already-registered 'probe' pin. It will be
+        # replaced by this instance.
         pins = self.printer.lookup_object('pins')
-        if 'probe' in pins.chips:
-            pins.chips.pop('probe')
-            pins.pin_resolvers.pop('probe')
+        pins.chips.pop('probe')
+        pins.pin_resolvers.pop('probe')
 
         probe.PrinterProbe.__init__(self, probe_config, mcu_probe)
         self.settling_sample = config.getboolean('settling_sample', False)
