@@ -22,8 +22,15 @@ function check_klipper() {
 function link_extension() {
     echo "Linking extensions to Klipper..."
     for extension in ${EXTENSION_LIST}; do
-        ln -sf "${SRCDIR}/${extensions}" "${KLIPPER_PATH}/klippy/extras/${extension}"
+        ln -sf "${SRCDIR}/${extension}" "${KLIPPER_PATH}/klippy/extras/${extension}"
     done
+}
+
+# Step 3: restarting Klipper
+function restart_klipper()
+{
+    echo "Restarting Klipper..."
+    sudo systemctl restart klipper
 }
 
 function verify_ready() {
@@ -41,3 +48,4 @@ done
 
 verify_ready
 link_extension
+restart_klipper
