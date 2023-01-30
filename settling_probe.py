@@ -4,12 +4,12 @@
 # Copyright (C) 2023 Mitko Haralanov <voidtrance@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import probe
+from .probe import PrinterProbe
 import pins
 import configparser
 
 
-class SettlingProbe(probe.PrinterProbe):
+class SettlingProbe(PrinterProbe):
     def __init__(self, config):
         self.printer = config.get_printer()
         probe_config = config.getsection('probe')
@@ -35,7 +35,7 @@ class SettlingProbe(probe.PrinterProbe):
         pins.chips.pop('probe')
         pins.pin_resolvers.pop('probe')
 
-        probe.PrinterProbe.__init__(self, probe_config, mcu_probe)
+        PrinterProbe.__init__(self, probe_config, mcu_probe)
         self.settling_sample = config.getboolean('settling_sample', False)
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
 
@@ -63,13 +63,13 @@ class SettlingProbe(probe.PrinterProbe):
     def run_probe(self, gcmd):
         if self.settling_sample:
             self._run_settling_probe(gcmd)
-        return probe.PrinterProbe.run_probe(self, gcmd)
+        return PrinterProbe.run_probe(self, gcmd)
 
     def cmd_PROBE(self, gcmd):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
         global_settling_sample = self.settling_sample
         self.settling_sample = settling_sample
-        ret = probe.PrinterProbe.cmd_PROBE(self, gcmd)
+        ret = PrinterProbe.cmd_PROBE(self, gcmd)
         self.settling_sample = global_settling_sample
         return ret
 
@@ -77,13 +77,13 @@ class SettlingProbe(probe.PrinterProbe):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
         if settling_sample:
             self._run_settling_probe(gcmd)
-        return probe.PrinterProbe.cmd_PROBE_ACCURACY(self, gcmd)
+        return PrinterProbe.cmd_PROBE_ACCURACY(self, gcmd)
 
     def cmd_PROBE_CALIBRATE(self, gcmd):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
         global_settling_sample = self.settling_sample
         self.settling_sample = settling_sample
-        ret = probe.PrinterProbe.cmd_PROBE_CALIBRATE(self, gcmd)
+        ret = PrinterProbe.cmd_PROBE_CALIBRATE(self, gcmd)
         self.settling_sample = global_settling_sample
         return ret
 
