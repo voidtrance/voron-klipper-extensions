@@ -5,7 +5,7 @@ set -e
 
 KLIPPER_PATH="${HOME}/klipper"
 SYSTEMDDIR="/etc/systemd/system"
-EXTENSION_LIST="gcode_shell_command.py settling_probe.py"
+EXTENSION_LIST="gcode_shell_command.py settling_probe.py led_interpolate.py"
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/ && pwd )"
 
 # Step 1:  Verify Klipper has been installed
@@ -37,7 +37,7 @@ function link_extension() {
     done
 }
 
-# Step 4: Optionally, restarting Klipper
+# Step 4: Restart Klipper
 function restart_klipper() {
     echo "Restarting Klipper..."
     sudo systemctl restart klipper
@@ -59,7 +59,5 @@ done
 verify_ready
 existing_install=$(check_existing)
 link_extension
-if [ ${existing_install} -eq 0 ]; then
-    restart_klipper
-fi
+restart_klipper
 exit 0
