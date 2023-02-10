@@ -22,7 +22,7 @@ benefit from this.
 To enable the module, add the following to your `printer.cfg` file right after
 the `[probe]` section:
 
-```gcode
+```ini
 [settling_probe]
 #settling_sample:
 #   Globally enable the throw-away settling sample. Default is 'False'.
@@ -43,7 +43,7 @@ I've modified it to add support for custom GCode execution on either success
 or failure:
 
 #### Usage
-```gcode
+```ini
 [gcode_shell_command COMMAND]
 #value_<var>: <value>
 #   Output value that can be updated by the command. <value>
@@ -75,7 +75,7 @@ command:
 #   reference the value_* values.
 ```
 #### Examples
-```gcode
+```ini
 [gcode_shell_command my_command]
 command: echo my_command executing
 success:
@@ -88,7 +88,7 @@ gcode:
     RUN_SHELL_COMMAND CMD=my_command
 ```
 
-```gcode
+```ini
 [gcode_shell_command my_command]
 value_var1: 0
 command: echo "VALUE_UPDATE:var1=10"
@@ -105,7 +105,7 @@ success:
 >
 > For example, the following will cause an infinite loop:
 >
-> ```gcode
+> ```ini
 > [gcode_shell_command my_command]
 > command: echo my_command executing
 > success:
@@ -133,7 +133,7 @@ of LEDs from their current color/brightness to a given color/brightness.
 After installing the extention, add the following to your config file to enable
 the `LED_INTERPOLATE` command:
 
-```
+```ini
 [led_interpolate]
 ```
 
@@ -173,7 +173,7 @@ cd voron-klipper-extensions
 ./install-extensions.sh
 ```
 5. Add the following section to `moonraker.conf`:
-```
+```ini
 [update_manager voron-klipper-extensions]
 type: git_repo
 path: ~/voron-klipper-extensions
