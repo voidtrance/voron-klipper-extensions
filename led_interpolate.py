@@ -5,7 +5,8 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging
 
-INTERPOLATE_STEP_TIME = 0.1
+FRAME_RATE = 24
+INTERPOLATE_STEP_TIME = 1.0 / FRAME_RATE
 
 
 class LedInterpolate:
@@ -56,12 +57,13 @@ class LedInterpolate:
     def cmd_LED_INTERPOLATE(self, gcmd):
         target_name = gcmd.get("LED")
         target_colors = [
-            round(gcmd.get_float("RED", minval=0.0, maxval=1.0) * 255),
-            round(gcmd.get_float("GREEN", minval=0.0, maxval=1.0) * 255),
-            round(gcmd.get_float("BLUE", minval=0.0, maxval=1.0) * 255),
-            round(gcmd.get_float("WHITE", 0.0, minval=0.0, maxval=1.0) * 255)]
-        factor = gcmd.get_float("FACTOR", 0.3, minval=0.01, maxval=1.0)
+            round(gcmd.get_float("RED", 0., minval=0.0, maxval=1.0) * 255),
+            round(gcmd.get_float("GREEN", 0., minval=0.0, maxval=1.0) * 255),
+            round(gcmd.get_float("BLUE", 0., minval=0.0, maxval=1.0) * 255),
+            round(gcmd.get_float("WHITE", 0., minval=0.0, maxval=1.0) * 255)]
+        runtime = gcmd.get_float("DURATION", 0.)
 
+        factor = (100 / (runtime / INTERPOLATE_STEP_TIME)) / 100
         if target_name not in self.led.led_helpers:
             raise gcmd.error("Unknown LED object '%s'" % target_name)
 
