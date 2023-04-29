@@ -1,6 +1,6 @@
 # Smoothly transition RGB LEDs between two colors
 #
-# Copyright (C) 2022 Mitko Haralanov <voidtrance@gmail.com>
+# Copyright (C) 2022-2023 Mitko Haralanov <voidtrance@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging
