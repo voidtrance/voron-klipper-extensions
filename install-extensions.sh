@@ -5,7 +5,7 @@ set -e
 
 KLIPPER_PATH="${HOME}/klipper"
 SYSTEMDDIR="/etc/systemd/system"
-EXTENSION_LIST="gcode_shell_command.py settling_probe.py led_interpolate.py"
+EXTENSION_LIST="gcode_shell_command.py settling_probe.py led_interpolate.py state_notify.py"
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/ && pwd )"
 
 # Step 1:  Verify Klipper has been installed

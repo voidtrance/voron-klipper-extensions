@@ -158,6 +158,110 @@ can be used to alter the amount by which each step in the transition will change
   any GCode, it may still interfere with normal command processing if the LEDs
   are connected to the MCU controlling the printing operations.
 
+### Printer State Notifications
+Klipper's `idle_timeout` module define a set of printer states that change based
+what the printer is currently doing. Those states are `ready`, `printing`, and
+`idle`.
+
+While those states are available to macros, the module does not provide a way to
+execute custom GCode when the printer transition states (with the exception of
+the `idle` state).
+
+This extension can be used for this purpose. It provides a new set of states that
+are richer than the ones defined by Klipper. In addition, it allows for the
+execution of custom GCode for each one of the states.
+
+#### Motivation
+I set about creating this module for two main reasons:
+1. I had some macros that I wanted to be executed when the printer "boots" up.
+The normal way to do that was to define a `[delayed_gcode]` macro with an
+`initial_duration` set to 1 second. However, that felt clumsy to not very clean.
+2. I wanted to be able to turn off the LCD after a period of no activity. While
+that was easy to do, turning it back on was much more challenging. I tried tieing
+a `[gcode_button]` to the LCD button but due to a "bug" in Klipper, doing so led
+to Klipper crashes.
+
+#### Module States and Transition
+The module defines the following states:
+
+| State | Description |
+| :- | -- |
+| `ready` | The `ready` state is entered when the printer has initialized and ready. |
+| `active` | The `active` state is entered when the printer is actively executing commands. |
+| `printing` | The printer is printing. |
+| `paused` | The current print is paused. |
+| `inactive` | The `inactive` state is entered after a period of time with no activity. |
+| `idle` | The `idle` state is entered after the timeout in `idle_timeout` has elapsed. |
+| `shutdown` | The printer been shutdown. This can happen due to an error or through a user command. |
+| `disconnect` | Klipper has been disconnected from the MCU. |
+
+The states can transition in the following manner:
+
+```mermaid
+stateDiagram-v2
+   [*]-->ready;
+   ready-->active;
+   ready-->printing;
+   ready-->inactive;
+   ready-->disconnect;
+   ready-->shutdown;
+   active-->inactive;
+   active-->disconnect;
+   active-->shutdown;
+   active-->printing;
+   printing-->paused;
+   printing-->active;
+   paused-->printing;
+   paused->active;
+   inactive-->active;
+   inactive-->printing;
+   inactive-->idle;
+   inactive-->disconnect;
+   inactive-->shutdown;
+   idle-->active;
+   idle-->printing;
+   idle-->disconnect;
+   idle-->shutdown;
+   shutdown-->[*];
+```
+
+#### Usage
+The module is activated by adding the `[state_notify]` section to the printer's
+configuration. The section has the following options/configuration:
+
+```ini
+[state_notify]
+#inactive_timeout:
+#     Duration (in seconds) of no activity before the printer enters the `inactive`
+#     state.
+#on_ready_gcode:
+#     GCode template that will be executed when the printer is done initializing
+#     and is ready.
+#on_active_gcode:
+#     GCode template executed when the printer becomes active. This state switch
+#     is usually triggered by the execution of other GCode commands or usage of
+#     the display menu.
+#on_inactive_gcode:
+#     GCode template executed when the `inactive_timeout` duration elapses. The
+#     timer starts after the completion of any previous activity. This includes
+#     any GCode commands or interaction with the display menu.
+#on_idle_gcode:
+#     GCode template executed when the `idle_timeout` timeout duration elapses.
+#     This GCode is executed in addition to the `idle_timeout::gcode` template.
+```
+
+> **Note**
+> The way Klipper detects that there is some activity is by monitoring the
+> estimated print time through the `toolhead` object. Effectively, Klipper has
+> to start executing GCode in order for the any module to be able to detect
+> activity.
+>
+> Therefore, it is not possible to switch to the `active` state prior to Klipper
+> executing any GCode. As a result, the `on_active_gcode` template is executed
+> after the command that triggered the state change. If that command is a long
+> macro, it is possible that the `on_active_gcode` template will execute much
+> later than the initial activity has started.
+
 ## Installation
 1. Login to your RaspberryPi.
 2. Clone this repository:
