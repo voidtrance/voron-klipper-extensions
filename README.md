@@ -199,30 +199,31 @@ The states can transition in the following manner:
 
 ```mermaid
 stateDiagram-v2
-   [*]-->ready;
-   ready-->active;
-   ready-->printing;
-   ready-->inactive;
-   ready-->disconnect;
-   ready-->shutdown;
-   active-->inactive;
-   active-->disconnect;
-   active-->shutdown;
-   active-->printing;
-   printing-->paused;
-   printing-->active;
-   paused-->printing;
-   paused->active;
-   inactive-->active;
-   inactive-->printing;
-   inactive-->idle;
-   inactive-->disconnect;
-   inactive-->shutdown;
-   idle-->active;
-   idle-->printing;
-   idle-->disconnect;
-   idle-->shutdown;
-   shutdown-->[*];
+   [*]-->ready
+   ready-->active
+   ready-->printing
+   ready-->inactive
+   ready-->disconnect
+   ready-->shutdown
+   active-->inactive
+   active-->disconnect
+   active-->shutdown
+   active-->printing
+   printing-->paused
+   printing-->active
+   paused-->printing
+   paused-->active
+   inactive-->active
+   inactive-->printing
+   inactive-->idle
+   inactive-->disconnect
+   inactive-->shutdown
+   idle-->active
+   idle-->printing
+   idle-->disconnect
+   idle-->shutdown
+   disconnect-->ready
+   shutdown-->[*]
 ```
 
 #### Usage
