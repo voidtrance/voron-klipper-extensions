@@ -175,11 +175,14 @@ execution of custom GCode for each one of the states.
 I set about creating this module for two main reasons:
 1. I had some macros that I wanted to be executed when the printer "boots" up.
 The normal way to do that was to define a `[delayed_gcode]` macro with an
-`initial_duration` set to 1 second. However, that felt clumsy to not very clean.
+`initial_duration` set to 1 second. However, that felt clumsy and not very clean.
 2. I wanted to be able to turn off the LCD after a period of no activity. While
 that was easy to do, turning it back on was much more challenging. I tried tieing
 a `[gcode_button]` to the LCD button but due to a "bug" in Klipper, doing so led
 to Klipper crashes.
+3. My other attempt at this required modification to the default `idle_timeout.py`
+module. While that worked it caused the Klipper repository on the Pi to be "dirty",
+which meant that I had to do manual work to update Klipper.
 
 #### Module States and Transition
 The module defines the following states:
@@ -226,6 +229,16 @@ stateDiagram-v2
    shutdown-->[*]
 ```
 
+The Gcode templates are executed as follows:
+
+| New State | Previous State(s) | Gcode Template |
+| -- | -- | -- |
+| `ready` | `Node`, `disconnect` | The `on_ready_gcode` template is executed. The printer should enter this state only on initial startup. So this template will be executed only once.|
+| `active` | `ready`, `inactive`, `idle` | The `on_active_gcode` template is executed. |
+| `printing` | `inactive`, `idle` | The `on_active_gcode` template is executed. Transitioning from the `inactive` or `idle` states to the `printing` state implies an `active` transition. |
+| `inactive` | `ready`, `active`, `printing` | The `on_inactive_gcode` template is executed. |
+| `idle` | `inactive` | The `on_idle_gcode` is executed. Note that the `idle_timeout` module also can execute custom gcode through the `idle_timeout::gcode` setting. |
+
 #### Usage
 The module is activated by adding the `[state_notify]` section to the printer's
 configuration. The section has the following options/configuration:
@@ -252,6 +265,7 @@ configuration. The section has the following options/configuration:
 ```
 
 > **Note**
+>
 > The way Klipper detects that there is some activity is by monitoring the
 > estimated print time through the `toolhead` object. Effectively, Klipper has
 > to start executing GCode in order for the any module to be able to detect
@@ -262,6 +276,20 @@ configuration. The section has the following options/configuration:
 > after the command that triggered the state change. If that command is a long
 > macro, it is possible that the `on_active_gcode` template will execute much
 > later than the initial activity has started.
+
+The module provides a new command - `STATE_NOTIFY_STATE` - that will display the
+current state.
+
+The current state can also be queried in macros by using the `printer.state_notify`
+object:
+
+```gcode
+[gcode_macro STATE_NOTIFY_EXAMPLE]
+description: Display the state_notify state
+gcode:
+    {% set st = printer.state_notify %}
+    {action_respond_info("state_notify: state=%s, timeout=%" % (st.state, st.timeout))}
+```
 
 ## Installation
 1. Login to your RaspberryPi.

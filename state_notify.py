@@ -38,6 +38,8 @@ class StateNotify:
         self.menu = self.sdcard = self.print_stats = None
         self.menu_check_timer = self.inactive_timer = self.delayed_gcode_timer = \
             self.pause_timer = None
+        self.gcode.register_command("STATE_NOTIFY_STATE", self.cmd_STATE_NOTIFY_STATE,
+                                    False, desc=self.cmd_STATE_NOTIFY_STATE_help)
         self.printer.register_event_handler("klippy:ready",
                                             lambda: self._klippy_handler("ready"))
         self.printer.register_event_handler("klippy:shutdown",
@@ -191,6 +193,10 @@ class StateNotify:
                 'inactive_timeout': self.inactive_timeout,
                 }
 
+    cmd_STATE_NOTIFY_STATE_help = "Get current printer status"
+
+    def cmd_STATE_NOTIFY_STATE(self, gcmd):
+        self.gcode.respond_info("State Notify state: %s" % self.state)
 
 def load_config(config):
     return StateNotify(config)
