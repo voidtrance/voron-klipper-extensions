@@ -190,7 +190,7 @@ The module defines the following states:
 | State | Description |
 | :- | -- |
 | `ready` | The `ready` state is entered when the printer has initialized and ready. |
-| `active` | The `active` state is entered when the printer is actively executing commands. |
+| `active` | The `active` state is entered when the printer is actively executing commands. The printer is also considered active if there are any active heaters (heaters with a target >= 0.0 degrees). |
 | `printing` | The printer is printing. |
 | `paused` | The current print is paused. |
 | `inactive` | The `inactive` state is entered after a period of time with no activity. |

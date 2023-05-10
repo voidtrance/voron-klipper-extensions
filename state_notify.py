@@ -58,6 +58,7 @@ class StateNotify:
             self.menu = self.printer.lookup_object("menu")
             self.sdcard = self.printer.lookup_object("virtual_sdcard")
             self.print_stats = self.printer.lookup_object("print_stats")
+            self.pheaters = self.printer.lookup_object("heaters")
             self.printer.register_event_handler("idle_timeout:idle",
                                                 lambda e: self._state_handler("idle_idle", e))
             self.printer.register_event_handler("idle_timeout:ready",
@@ -168,9 +169,25 @@ class StateNotify:
                                         eventtime + GCODE_MUTEX_DELAY)
         return None
 
-    # Transition o the "inactive" state. This callback is called when the
+    # Check whether the printer is still active. This is used to detect
+    # activity, which is not readily detectable from the idle_timeout
+    # state. Such activity includes active heaters, for example.
+    def _check_printer_active(self, eventtime):
+        heaters = self.pheaters.get_all_heaters()
+        for heater_name in heaters:
+            heater = self.pheaters.lookup_heater(heater_name)
+            status = heater.get_status(eventtime)
+            if status["target"] > 0.:
+                return True
+
+        return False
+
+    # Transition to the "inactive" state. This callback is called when the
     # inactive timeout elapses.
     def _inactive_timer_handler(self, eventtime):
+        if self._check_printer_active(eventtime):
+            return eventtime + self.inactive_timeout
+
         self.ignore_change = True
         self.handle_state_change("inactive", eventtime)
         self.ignore_change = False
