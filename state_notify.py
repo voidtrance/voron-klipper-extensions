@@ -166,7 +166,7 @@ class StateNotify:
             return self._run_gcode(template)
         self.delayed_gcode_timer = \
             self.reactor.register_timer(lambda e: self._delayed_gcode_handler(e, template),
-                                        eventtime + GCODE_MUTEX_DELAY)
+                                        self.reactor.monotonic() + GCODE_MUTEX_DELAY)
         return None
 
     # Check whether the printer is still active. This is used to detect
