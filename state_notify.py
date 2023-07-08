@@ -55,7 +55,6 @@ class StateNotify:
             # fact that Klipper creates objects as it parses the configuration and
             # the object might not have been created by the time this module is
             # initialized.
-            self.menu = self.printer.lookup_object("menu")
             self.sdcard = self.printer.lookup_object("virtual_sdcard")
             self.print_stats = self.printer.lookup_object("print_stats")
             self.pheaters = self.printer.lookup_object("heaters")
@@ -65,17 +64,20 @@ class StateNotify:
                                                 lambda e: self._state_handler("idle_ready", e))
             self.printer.register_event_handler("idle_timeout:printing",
                                                 lambda e: self._state_handler("idle_printing", e))
-            self.printer.register_event_handler("menu:begin",
-                                                lambda e: self._state_handler("menu_begin", e))
-            self.printer.register_event_handler("menu:exit",
-                                                lambda e: self._state_handler("menu_exit", e))
-            self.menu_check_timer = \
-                self.reactor.register_timer(self._menu_check_timer_handler)
             self.inactive_timer = \
                 self.reactor.register_timer(self._inactive_timer_handler,
                                             self.reactor.monotonic() + self.inactive_timeout)
             self.pause_timer = \
                 self.reactor.register_timer(self._print_pause_handler)
+
+            self.menu = self.printer.lookup_object("menu", None)
+            if self.menu:
+                self.printer.register_event_handler("menu:begin",
+                                                    lambda e: self._state_handler("menu_begin", e))
+                self.printer.register_event_handler("menu:exit",
+                                                    lambda e: self._state_handler("menu_exit", e))
+                self.menu_check_timer = \
+                    self.reactor.register_timer(self._menu_check_timer_handler)
         elif state == "shutdown":
             if self.inactive_timer:
                 self.reactor.unregister_timer(self.inactive_timer)
@@ -90,12 +92,16 @@ class StateNotify:
         if state == "idle_idle":
             self.reactor.update_timer(self.pause_timer, self.reactor.NEVER)
             self.reactor.update_timer(self.inactive_timer, self.reactor.NEVER)
-            self.reactor.update_timer(self.menu_check_timer,
-                                      self.reactor.NEVER)
             state = "idle"
-            self.menu.exit()
+            if self.menu:
+                self.reactor.update_timer(self.menu_check_timer,
+                                          self.reactor.NEVER)
+                self.menu.exit()
         elif (state == "idle_ready" or state == "menu_exit"):
-            if self.state in ("ready", "active", "printing") and not self.menu.is_running():
+            menu_is_running = False
+            if self.menu:
+                menu_is_running = self.menu.is_running()
+            if self.state in ("ready", "active", "printing") and not menu_is_running:
                 self.reactor.update_timer(self.inactive_timer,
                                           self.reactor.monotonic() + self.inactive_timeout)
                 if self.state == "printing":
