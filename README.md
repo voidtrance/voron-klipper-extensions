@@ -116,6 +116,13 @@ success:
 >     RUN_SHELL_COMMAND CMD=my_command
 > ```
 
+#### Known Issues
+1. This extension (like many others) need the `gcode_macro` Klipper object to
+already exist as it is used to process the `success` and `failure` actions. If
+a `[gcode_shell_command]` instance appears in the configuration prior to any
+`[gcode_macro]` sections, an error will occur as the lookup fails. To fix this,
+ensure that there is at least one `[gcode_macro]` section in the configuration
+prior to any `[gcode_shell_command]` sections.
 ### LED Interpolation
 A small extension that can be used to smootly transition (interpolate) RGB(W)
 LEDs between colors.
