@@ -48,7 +48,8 @@ class StateNotify:
                                             lambda: self._klippy_handler("disconnect"))
 
     def _klippy_handler(self, state):
-        self.handle_state_change(state, self.reactor.monotonic())
+        eventtime = self.reactor.monotonic()
+        self.handle_state_change(state, eventtime)
         if state == "ready":
             # Look up the objects below when the printer has reached the "Ready"
             # state. Doing so before this point may result in errors due to the
@@ -58,12 +59,23 @@ class StateNotify:
             self.sdcard = self.printer.lookup_object("virtual_sdcard")
             self.print_stats = self.printer.lookup_object("print_stats")
             self.pheaters = self.printer.lookup_object("heaters")
+            self.toolhead = self.printer.lookup_object("toolhead")
             self.printer.register_event_handler("idle_timeout:idle",
                                                 lambda e: self._state_handler("idle_idle", e))
             self.printer.register_event_handler("idle_timeout:ready",
                                                 lambda e: self._state_handler("idle_ready", e))
             self.printer.register_event_handler("idle_timeout:printing",
                                                 lambda e: self._state_handler("idle_printing", e))
+            # Registering for the toolhead sync_print_time event is a little
+            # overkill since it can generate a lot of substate changes (may be,
+            # that can be "filtered" by looking at the times provided). However, it
+            # serves a very specific purpose: the idle_timeout state transitions to
+            # "printing" as part of the printer initialization. So, if the printer
+            # starts activity right after restart and before the idle_timeout module
+            # has had a chance to go into "idle" state, we'll never catch the
+            # "printing" notification.
+            self.printer.register_event_handler("toolhead:sync_print_time",
+                                                lambda e, p, t: self._state_handler("idle_printing", e))
             self.inactive_timer = \
                 self.reactor.register_timer(self._inactive_timer_handler,
                                             self.reactor.monotonic() + self.inactive_timeout)
@@ -87,7 +99,7 @@ class StateNotify:
                 self.reactor.unregister_timer(self.pause_timer)
 
     def _state_handler(self, state, eventtime):
-        log("Substate: %s", state)
+        #log("Substate: %s", state)
         template = None
         if state == "idle_idle":
             self.reactor.update_timer(self.pause_timer, self.reactor.NEVER)
