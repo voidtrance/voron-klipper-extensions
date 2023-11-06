@@ -298,7 +298,8 @@ gcode:
     {action_respond_info("state_notify: state=%s, timeout=%" % (st.state, st.timeout))}
 ```
 
-## Installation
+## Setup and Removal
+### Installation
 1. Login to your RaspberryPi.
 2. Clone this repository:
 ```sh
@@ -321,6 +322,26 @@ origin: https://github.com/voidtrance/voron-klipper-extensions.git
 install_script: install-extensions.sh
 managed_services: klipper
 ```
+
+### Removal
+1. Login to your RaspberryPi.
+2. Change directory to the repository:
+```sh
+cd voron-klipper-extensions
+```
+3. Run the uninstall script:
+```sh
+./install-extensions.sh -u
+```
+4. (Optional) Remove the repository:
+```sh
+cd ..
+rm -rf voron-klipper-extensions
+```
+5. (Optional) If you have removed the repository in step 4, you'll have to
+remove the Moonraker update manager setup as well. Edit `moonraker.conf` and
+remove the `[update_manager voron-klipper-exteions]` section.
+
 
 ## Contributing
 If you'd like to contribute, please submit a pull request with your suggested

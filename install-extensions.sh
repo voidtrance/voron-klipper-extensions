@@ -30,10 +30,17 @@ function check_existing() {
 }
 
 # Step 3: Link extension to Klipper
-function link_extension() {
+function link_extensions() {
     echo "Linking extensions to Klipper..."
     for extension in ${EXTENSION_LIST}; do
         ln -sf "${SRCDIR}/${extension}" "${KLIPPER_PATH}/klippy/extras/${extension}"
+    done
+}
+
+function unlink_extensions() {
+    echo "Unlinking extensions from Klipper..."
+    for extension in ${EXTENSION_LIST}; do
+        rm -f "${KLIPPER_PATH}/klippy/extras/${extension}"
     done
 }
 
@@ -50,14 +57,23 @@ function verify_ready() {
     fi
 }
 
-while getopts "k:" arg; do
+do_uninstall=0
+
+while getopts "k:u" arg; do
     case ${arg} in
         k) KLIPPER_PATH=${OPTARG} ;;
+        u) do_uninstall=1 ;;
     esac
 done
 
 verify_ready
-existing_install=$(check_existing)
-link_extension
+existing=$(check_existing)
+if [ ${existing} -eq 0 ]; then
+    link_extensions
+else
+    if [ ${do_uninstall} -eq 1 ]; then
+        unlink_extensions
+    fi
+fi
 restart_klipper
 exit 0
