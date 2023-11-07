@@ -109,7 +109,7 @@ class StateNotify:
     def _sync_update_handler(self, eventtime):
         if self.trigger_on_sync_update:
             self.trigger_on_sync_update = False
-            self._state_handler("active", eventtime)
+            self._state_handler("idle_printing", eventtime)
 
     def _state_handler(self, state, eventtime):
         log("Substate: %s", state)
