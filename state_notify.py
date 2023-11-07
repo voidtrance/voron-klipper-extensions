@@ -35,6 +35,7 @@ class StateNotify:
             'inactive': self.gcode_macro.load_template(config, "on_inactive_gcode", '')
         }
         self.ignore_change = False
+        self.trigger_on_sync_update = False
         self.state = "none"
         self.menu = self.sdcard = self.print_stats = None
         self.menu_check_timer = self.inactive_timer = self.delayed_gcode_timer = \
@@ -91,6 +92,12 @@ class StateNotify:
                         self.idle_gcode
             idle_timeout.idle_gcode = TemplateWrapper(self.printer, self.gcode_macro.env,
                                                       "idle_timeout:gcode", idle_gcode)
+            
+            # Handle a corner case in which we may miss a transition to "active"
+            # state if the printer is executing commands right after a restart.
+            self.trigger_on_sync_update = True
+            self.printer.register_event_handler("toolhead:sync_print_time",
+                                                lambda curr, print, est: self._sync_update_handler(curr))
         elif state == "shutdown":
             if self.inactive_timer:
                 self.reactor.unregister_timer(self.inactive_timer)
@@ -98,6 +105,11 @@ class StateNotify:
                 self.reactor.unregister_timer(self.menu_check_timer)
             if self.pause_timer:
                 self.reactor.unregister_timer(self.pause_timer)
+
+    def _sync_update_handler(self, eventtime):
+        if self.trigger_on_sync_update:
+            self.trigger_on_sync_update = False
+            self._state_handler("active", eventtime)
 
     def _state_handler(self, state, eventtime):
         log("Substate: %s", state)
