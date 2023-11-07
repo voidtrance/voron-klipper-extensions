@@ -11,13 +11,14 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging
+from extras.gcode_macro import TemplateWrapper
 
 TIMER_DURATION = 0.1
 GCODE_MUTEX_DELAY = 0.2
 
 
 def log(fmt, *args):
-    logging.info("state_notify:" + fmt % args)
+    logging.info("state_notify: " + fmt % args)
 
 
 class StateNotify:
@@ -26,12 +27,12 @@ class StateNotify:
         self.inactive_timeout = config.getfloat("inactive_timeout", 0.)
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object("gcode")
-        gcode_macro = self.printer.load_object(config, "gcode_macro")
+        self.gcode_macro = self.printer.load_object(config, "gcode_macro")
+        self.idle_gcode = config.get("on_idle_gcode")
         self.gcode_templates = {
-            'ready': gcode_macro.load_template(config, "on_ready_gcode", ''),
-            'idle': gcode_macro.load_template(config, "on_idle_gcode", ''),
-            'active': gcode_macro.load_template(config, "on_active_gcode", ''),
-            'inactive': gcode_macro.load_template(config, "on_inactive_gcode", '')
+            'ready': self.gcode_macro.load_template(config, "on_ready_gcode", ''),
+            'active': self.gcode_macro.load_template(config, "on_active_gcode", ''),
+            'inactive': self.gcode_macro.load_template(config, "on_inactive_gcode", '')
         }
         self.ignore_change = False
         self.state = "none"
@@ -78,6 +79,18 @@ class StateNotify:
                                                     lambda e: self._state_handler("menu_exit", e))
                 self.menu_check_timer = \
                     self.reactor.register_timer(self._menu_check_timer_handler)
+
+            # Any "idle" gcode specified in the 'state_notife:on_idle_gcode' config
+            # needs to be executed as part of the 'idle_timeout:gcode' config. Otherwise,
+            # the printer jumps out of "idle" state because the 'state_notify:on_idle_gcode'
+            # GCode gets executed after the 'idle_timeout' state changes to "Idle".
+            idle_timeout = self.printer.lookup_object("idle_timeout")
+            configfile = self.printer.lookup_object("configfile")
+            config_status = configfile.get_status(self.reactor.monotonic())
+            idle_gcode = config_status["config"]["idle_timeout"].get("gcode", "") + \
+                        self.idle_gcode
+            idle_timeout.idle_gcode = TemplateWrapper(self.printer, self.gcode_macro.env,
+                                                      "idle_timeout:gcode", idle_gcode)
         elif state == "shutdown":
             if self.inactive_timer:
                 self.reactor.unregister_timer(self.inactive_timer)
