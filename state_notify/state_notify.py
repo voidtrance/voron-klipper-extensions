@@ -28,7 +28,7 @@ class StateNotify:
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object("gcode")
         self.gcode_macro = self.printer.load_object(config, "gcode_macro")
-        self.idle_gcode = config.get("on_idle_gcode")
+        self.idle_gcode = config.get("on_idle_gcode", '')
         self.gcode_templates = {
             'ready': self.gcode_macro.load_template(config, "on_ready_gcode", ''),
             'active': self.gcode_macro.load_template(config, "on_active_gcode", ''),
