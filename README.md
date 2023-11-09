@@ -8,6 +8,7 @@ The repository provide the following Klipper extensions:
 |-|-|
 | [gcode_shell_command](/gcode_shell_command) | Execute shell commands from GCode |
 | [led_interpolate](/led_interpolate) | Smootly transition LEDS between colors |
+| [loop_macro](/loop_macro) | Looping G-Code macro variant |
 | [settling_probe](/settling_probe) | Execute a "settling" probe sample to settle the gantry |
 | [state_notify](/state_notify) | Improved printer state notifications |
 

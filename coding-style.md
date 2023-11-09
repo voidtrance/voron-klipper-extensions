@@ -12,7 +12,7 @@ Below are some guidelines for each individual language.
 
 ### Shell
 * Shell scripts should use `bash` as the shell.
-* Indentations should be 
+* Indentations should be 4 spaces.
 * All variables should be `${name}`.
 * Shell functions should use the `function` keyword.
 
