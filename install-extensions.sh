@@ -22,9 +22,9 @@ function check_klipper() {
 # This is a way to check if this is the initial installation.
 function check_existing() {
     for extension in ${EXTENSION_LIST}; do
-        [ -L "${KLIPPER_PATH}/klippy/extras/${extension}.py" ] || return 0
+        [ -L "${KLIPPER_PATH}/klippy/extras/${extension}.py" ] || return 1
     done
-    return 1
+    return 0
 }
 
 # Step 3: Link extension to Klipper
