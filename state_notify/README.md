@@ -74,7 +74,7 @@ The Gcode templates are executed as follows:
 | New State | Previous State(s) | Gcode Template |
 | -- | -- | -- |
 | `ready` | `Node`, `disconnect` | The `on_ready_gcode` template is executed. The printer should enter this state only on initial startup. So this template will be executed only once.|
-| `active` | `ready`, `inactive`, `idle` | The `on_active_gcode` template is executed. |
+| `active` | `ready`, `inactive`, `idle`, `printing` | The `on_active_gcode` template is executed. |
 | `printing` | `inactive`, `idle` | The `on_active_gcode` template is executed. Transitioning from the `inactive` or `idle` states to the `printing` state implies an `active` transition. |
 | `inactive` | `ready`, `active`, `printing` | The `on_inactive_gcode` template is executed. |
 | `idle` | `inactive` | The `on_idle_gcode` is executed. Note that the `idle_timeout` module also can execute custom gcode through the `idle_timeout::gcode` setting. |

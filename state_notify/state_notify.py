@@ -136,13 +136,12 @@ class StateNotify:
             if self.menu:
                 menu_is_running = self.menu.is_running()
             if self.state in ("ready", "active", "printing") and not menu_is_running:
-                self.reactor.update_timer(self.inactive_timer,
-                                          self.reactor.monotonic() + self.inactive_timeout)
                 if self.state == "printing":
                     self.reactor.update_timer(self.pause_timer,
                                               self.reactor.NEVER)
-                    self.handle_state_change("active", eventtime,
-                                             "__invalid__")
+                    self.handle_state_change("active", eventtime)
+                self.reactor.update_timer(self.inactive_timer,
+                                          self.reactor.monotonic() + self.inactive_timeout)
             return
         elif state == "idle_printing" or state == "menu_begin":
             self.reactor.update_timer(self.inactive_timer, self.reactor.NEVER)
