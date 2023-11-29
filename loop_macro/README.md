@@ -22,7 +22,7 @@ including delayed G-Code. This is due to the fact that loop macros
 hold the G-Code execution lock while running, which prevents all other
 G-Code from executing.
 
-## Usage
+## Configuration
 The `loop_macro` extension enables a new section (`[loop_macro MACRO_NAME]`)
 with the following configuration:
 
@@ -44,6 +44,11 @@ with the following configuration:
 #   A list of G-Code commands to execute after the completion of the
 #   looping commands in `gcode`. See docs/Command_Templates.md for
 #   G-Code format.
+#iteration_limit:
+#   The maximum number of time the macro will execute. This can be
+#   used in order to avoid infinite loops. If the macro reaches this
+#   number of iterations without hiting a termination point, it will
+#   stop execution. Default is 0 (no limit).
 #variable_<name>:
 #   One may specify any number of options with a "variable_" prefix.
 #   The given variable name will be assigned the given value (parsed
@@ -65,10 +70,32 @@ with the following configuration:
 #   using the auto completion feature. Default "G-Code macro"
 ```
 
-The `gcode` template supports two special commands - `CONTINUE` and `BREAK`.
+Each of the GCode templates (`entry`, `gcode`, and `exit`) can make use of
+the following variables, which are defined by the loop macro, itself:
+
+| Variable | Description |
+| :- | :- |
+| `iter` | The current iteration count. |
+| `limit` | The maximum iteration limit. |
+
+In addition, the `gcode` template supports two special commands - `CONTINUE`
+and `BREAK`:
+
 * `CONTINUE` stops the execution of the current loop interation and jumps to
 the next iteration.
 * `BREAK` terminates the entire loop.
+
+## Usage
+Loop macros are used just like any other GCode macro defined with the
+`gcode_macro` section.
+
+In addition to the normal macro parameters supported by GCode macros, loop
+macros also accept the `LIMIT` parameter, which can be used to change the
+maximum iteration count. Note that the `LIMIT` parameter is not available
+in the `params` object like other macro parameters as it is handled internally. Instead, the value can be obtained through the `limit` variable provided by `loop_macro`.
+
+> [!note]
+> In order to prevent infinite loops, a `LIMIT` value of `0` is ignored.
 
 ## Examples
 The following is a simple example that prints a message to the console
@@ -151,9 +178,45 @@ BREAK
 
 and the loop macro terminates.
 
+The next example show the use of the `LIMIT` parameter:
+```ini
+[loop_macro MY_LOOP_MACRO]
+iteration_limit: 5
+entry:
+    RESPOND MSG="Iteration limit: {limit}"
+gcode:
+    RESPOND MSG="Current iteration: {iter} out of {limit}
+```
+
+If the above loop macro is called without the `LIMIT` parameter, it will execute
+`iteration_limit` number of times, producing the following output:
+
+```
+echo: Iteration limit: 5
+echo: Current iteration: 0 out of 5
+echo: Current iteration: 1 out of 5
+echo: Current iteration: 2 out of 5
+echo: Current iteration: 3 out of 5
+echo: Current iteration: 4 out of 5
+```
+
+However, if the same macro is executed with the command `MY_LOOP_MACRO LIMIT=7`, the
+output changes to:
+
+```
+echo: Iteration limit: 7
+echo: Current iteration: 0 out of 7
+echo: Current iteration: 1 out of 7
+echo: Current iteration: 2 out of 7
+echo: Current iteration: 3 out of 7
+echo: Current iteration: 4 out of 7
+echo: Current iteration: 5 out of 7
+echo: Current iteration: 6 out of 7
+```
+
 ## WARNING!!!! WARNING!!!! WARNING!!!
 
-> [!warning]
+> [!caution]
 > **Care must be taken when using loop macros in order to avoid locking up Klipper!**
 
 Due to the fact that loop macros take the G-Code execution lock and loop macros don't have
@@ -161,8 +224,9 @@ a built-in termination mechanism, it is possible (and easy) to write a macro tha
 forever.
 
 A loop macro will only terminate if it encounters the `BREAK` command at some point
-of its execution. What this means is that a condition must exist under which the `BREAK`
-command will be executed.
+of its execution or its iteration limit is reached. What this means is that:
+ * either a condition must exist under which the `BREAK` command will be executed, or
+ * the loop macro must set a non-zero value for `iteration_limit` in its configuration.
 
 A good example of this is the `MY_TEMPERATURE_WAIT` loop macro above. While the `BREAK`
 special command does appear in the looping G-Code template, the processing will never

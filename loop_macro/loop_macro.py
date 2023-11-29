@@ -13,6 +13,7 @@ class LoopMacro(GCodeMacro):
         macro_obj = self.printer.load_object(config, 'gcode_macro')
         self.entry_template = macro_obj.load_template(config, 'entry', '')
         self.exit_template = macro_obj.load_template(config, 'exit', '')
+        self.iteration_limit = config.getint("iteration_limit", 0)
 
     def _create_context(self, gcmd, template):
         context = dict(self.variables)
@@ -25,6 +26,21 @@ class LoopMacro(GCodeMacro):
         if self.printer.is_shutdown():
             return
         
+        limit = gcmd.get_int("LIMIT", None)
+        if limit is None:
+            limit = self.iteration_limit
+
+        # LIMIT is a special argument that is provided by the
+        # implementation. So, reach into the GCode command
+        # parameters and remove it.
+        gcmd._params.pop("LIMIT", None)
+        parts = gcmd._commandline.split()
+        parts = [x for x in parts if not x.startswith("LIMIT")]
+        gcmd._commandline = " ".join(parts)
+
+        self.variables["iter"] = 0
+        self.variables["limit"] = limit
+
         context = self._create_context(gcmd, self.entry_template)
         self.entry_template.run_gcode_from_command(context)
 
@@ -40,6 +56,9 @@ class LoopMacro(GCodeMacro):
                         stop_execution = True
                     break
                 self.gcode.run_script_from_command(gcode)
+            self.variables["iter"] += 1
+            if limit > 0 and self.variables["iter"] >= limit:
+                break
 
         context = self._create_context(gcmd, self.exit_template)
         self.exit_template.run_gcode_from_command(context)
