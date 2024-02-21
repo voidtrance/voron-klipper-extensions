@@ -132,9 +132,31 @@ gcode:
 ```
 
 ## Known Issues
-* The `state_notify` module is built on top of the `idle_timeout` module. Therefore, the
+### Idle Timeout 
+The `state_notify` module is built on top of the `idle_timeout` module. Therefore, the
 inactivity timeout is not something known to the `idle_timeout` module. What this means is
 that when the `on_inactive_gcode` template is executed, the `idle_timeout` module transition
 back into its "Printing" state. This ends up resetting the `idle_timeout` timeout period. As
 a result, the printer's idle timeout becomes the `idle_timeout:timeout` value plus the
 `state_notify:inactive_timeout` value.
+
+### Module Initialization Sequence
+Klipper executes event handlers for the various events it triggers in the order in which the
+event handlers have been registered.
+
+The `state_notify` module registers a handler for the `READY` event, which is used to execute
+the `on_ready_gcode` template. Since the template may end up arbitrary GCode commands, it is
+possible for the `state_notify` module to cause Klipper crashes during the execution
+of the `on_ready_gcode` template.
+
+A crash may happen because the `on_ready_gcode` template is executing GCode handled by an
+object, which has not gone through it complete setup sequence - the object's `READY` handler
+has not been called yet since it was register after the `state_notify` handler.
+
+Unfortunately, there isn't a way that this can be handled from within the `state_notify`
+module since there is no way to know what other modules will register `READY` handlers and
+what GCode commands will be executed by the `on_ready_gcode` template. The best way to
+handle any potential issues is to move the `[state_notify]` configuration section towards
+the end of the `printer.cfg` file. This way, the `state_notify` module object will be
+created after all the previous objects and, thus, will register its `READY` callback at
+the end of the list.
