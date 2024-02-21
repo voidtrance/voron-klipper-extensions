@@ -175,9 +175,11 @@ class StateNotify:
     # Timer to monitor print statistics for state changes. This is needed to catch
     # print pauses.
     def _print_pause_handler(self, eventtime):
-        if self.print_stats.state == "paused":
-            if self.state != self.print_stats.state:
+        print_state = self.print_stats.get_status(eventtime).get("state")
+        if print_state == "paused":
+            if self.state != print_state:
                 self.handle_state_change("paused", eventtime, "__invalid__")
+                return self.reactor.NEVER
         return eventtime + TIMER_DURATION
 
     def _run_gcode(self, template):
