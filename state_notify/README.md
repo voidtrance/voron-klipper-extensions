@@ -145,9 +145,9 @@ Klipper executes event handlers for the various events it triggers in the order 
 event handlers have been registered.
 
 The `state_notify` module registers a handler for the `READY` event, which is used to execute
-the `on_ready_gcode` template. Since the template may end up arbitrary GCode commands, it is
-possible for the `state_notify` module to cause Klipper crashes during the execution
-of the `on_ready_gcode` template.
+the `on_ready_gcode` template. Since the template may end up executing arbitrary GCode
+commands, it is possible for the `state_notify` module to cause Klipper crashes during the
+execution of the `on_ready_gcode` template.
 
 A crash may happen because the `on_ready_gcode` template is executing GCode handled by an
 object, which has not gone through it complete setup sequence - the object's `READY` handler
