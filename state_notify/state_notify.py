@@ -17,8 +17,8 @@ TIMER_DURATION = 0.1
 GCODE_MUTEX_DELAY = 0.2
 
 
-def log(fmt, *args):
-    logging.info("state_notify: " + fmt % args)
+def log(eventtime, fmt, *args):
+    logging.info("state_notify[%s]: " % eventtime + fmt % args)
 
 
 class StateNotify:
@@ -125,7 +125,7 @@ class StateNotify:
             (self.sdcard.file_path() and self.sdcard.progress() > 0 and self.sdcard.progress())
     
     def _state_handler(self, state, eventtime):
-        log("Substate: %s", state)
+        log(eventtime, "Substate: %s", state)
         template = None
         if state == "idle_idle":
             self.reactor.update_timer(self.pause_timer, self.reactor.NEVER)
@@ -139,13 +139,13 @@ class StateNotify:
             menu_is_running = False
             if self.menu:
                 menu_is_running = self.menu.is_running()
-            if self.state in ("ready", "active", "printing") and not menu_is_running:
+            if self.state in ("ready", "active", "printing"):
                 if self.state == "printing":
-                    self.reactor.update_timer(self.pause_timer,
-                                              self.reactor.NEVER)
+                    self.reactor.update_timer(self.pause_timer,self.reactor.NEVER)
                     self.handle_state_change("active", eventtime)
-                self.reactor.update_timer(self.inactive_timer,
-                                          self.reactor.monotonic() + self.inactive_timeout)
+                if not menu_is_running:
+                    self.reactor.update_timer(self.inactive_timer,
+                                              self.reactor.monotonic() + self.inactive_timeout)
             return
         elif state == "idle_printing" or state == "menu_begin":
             self.reactor.update_timer(self.inactive_timer, self.reactor.NEVER)
@@ -177,14 +177,14 @@ class StateNotify:
         return self.reactor.monotonic() + TIMER_DURATION
 
     # Timer to monitor print statistics for state changes. This is needed to catch
-    # print pauses.
+    # print pauses/resumes.
     def _print_pause_handler(self, eventtime):
         print_state = self.print_stats.get_status(eventtime).get("state")
-        if print_state == "paused":
+        if print_state in ("paused", "printing"):
             if self.state != print_state:
-                self.handle_state_change("paused", eventtime, "__invalid__")
-                return self.reactor.NEVER
-        return eventtime + TIMER_DURATION
+                self.handle_state_change(print_state, eventtime, "__invalid__")
+            return eventtime + TIMER_DURATION
+        return self.reactor.NEVER
 
     def _run_gcode(self, template):
         try:
@@ -239,14 +239,14 @@ class StateNotify:
         return self.reactor.NEVER
 
     def handle_state_change(self, state, eventtime, template=None):
-        log("changing state from %s to %s", self.state, state)
+        log(eventtime, "changing state from %s to %s", self.state, state)
         self.state = state
         self.printer.send_event("state_notify:%s" % self.state)
         if template is None:
             template = self.state
         if template in self.gcode_templates and \
                 self.gcode_templates[template]:
-            log("  running template: %s", template)
+            log(eventtime, "  running template: %s", template)
             return self._run_template(eventtime, template)
         return None
 
