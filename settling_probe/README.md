@@ -27,7 +27,7 @@ the `[probe]` section:
 #   Screw Tilt, etc.)
 ```
 
-The module also augments the `PROBE`, `PROBE_ACCURACY`, and `PROBE_CALIBRATE`
-commands with an extra parameter - `SETTLING_SAMPLE` - which can be used to
-control whether the commands perform a settling sample independently from the
+The module also augments the `PROBE` and `PROBE_ACCURACY` commands with an
+extra parameter - `SETTLING_SAMPLE` - which can be used to control whether
+the commands perform a settling sample independently from the
 `settling_sample` setting.

@@ -6,7 +6,6 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 from .probe import ProbeEndstopWrapper, PrinterProbe, ProbeOffsetsHelper, \
     ProbeCommandHelper, ProbeSessionHelper
-import pins
 import configparser
 import logging
 
@@ -38,26 +37,17 @@ class SettlingProbeEndstopWrapper(ProbeEndstopWrapper):
         self.multi = 'OFF'
 
 class SettlingProbeCommandHelper(ProbeCommandHelper):
-    def cmd_PROBE(self, gcmd):
-        settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
-        global_settling_sample = self.settling_sample
-        self.settling_sample = settling_sample
-        ret = PrinterProbe.cmd_PROBE(self, gcmd)
-        self.settling_sample = global_settling_sample
-        return ret
-
     def cmd_PROBE_ACCURACY(self, gcmd):
-        settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
+        settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.probe.probe_session.settling_sample)
+        # Turn off the probe sessions settling_sample setting. We'll handle it
+        # ourselfs. Otherwise, the probe session will do a setlling sampel for
+        # each accuracy sample, which is not what we want.
+        session_setting = self.probe.probe_session.settling_sample
+        self.probe.probe_session.settling_sample = False
         if settling_sample:
-            self._run_settling_probe(gcmd)
-        return PrinterProbe.cmd_PROBE_ACCURACY(self, gcmd)
-
-    def cmd_PROBE_CALIBRATE(self, gcmd):
-        settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
-        global_settling_sample = self.settling_sample
-        self.settling_sample = settling_sample
-        ret = PrinterProbe.cmd_PROBE_CALIBRATE(self, gcmd)
-        self.settling_sample = global_settling_sample
+            self.probe.probe_session._run_settling_probe(gcmd)
+        ret = ProbeCommandHelper.cmd_PROBE_ACCURACY(self, gcmd)
+        self.probe.probe_session.settling_sample = session_setting
         return ret
 
 class SettlingProbeSessionHelper(ProbeSessionHelper):
@@ -77,8 +67,9 @@ class SettlingProbeSessionHelper(ProbeSessionHelper):
         toolhead.manual_move(probexy + [pos[2] + sample_retract_dist], lift_speed)
 
     def run_probe(self, gcmd):
-        logging.info("Settling sample: %s" % self.settling_sample)
-        if self.settling_sample:
+        settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
+        logging.info("Settling sample: %s" % settling_sample)
+        if settling_sample:
             self._run_settling_probe(gcmd)
         return ProbeSessionHelper.run_probe(self, gcmd)
 
@@ -91,8 +82,6 @@ class SettlingProbe(PrinterProbe):
         try:
             probe_obj = self.printer.lookup_object('probe')
             mcu_probe = probe_obj.mcu_probe
-            z_offset = probe_obj.probe_offsets.get_offsets()[2]
-            logging.info("%s %s" % (probe_obj.probe_offsets, z_offset))
         except configparser.Error:
             raise configparser.Error(
                 "Section 'settling_probe' should appear after 'probe' section")
@@ -114,7 +103,7 @@ class SettlingProbe(PrinterProbe):
         self.printer = config.get_printer()
         self.mcu_probe = SettlingProbeEndstopWrapper(probe_config, mcu_probe)
         self.cmd_helper = SettlingProbeCommandHelper(probe_config, self,
-                                             self.mcu_probe.query_endstop)
+                                                     self.mcu_probe.query_endstop)
         self.probe_offsets = ProbeOffsetsHelper(probe_config)
         self.probe_session = SettlingProbeSessionHelper(probe_config, config, self.mcu_probe)
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
