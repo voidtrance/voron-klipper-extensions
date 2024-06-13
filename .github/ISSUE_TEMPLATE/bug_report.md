@@ -35,5 +35,8 @@ This can be obtained by:
 2. Changing directory to the individual repositories.
 3. Running `git log --format=oneline -1` and recording the output.
 
+**Logfiles**
+1. Attach `klippy.log` file.
+
 **Additional context**
 Add any other context about the problem here.
