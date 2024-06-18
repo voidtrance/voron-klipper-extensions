@@ -80,7 +80,6 @@ class ShellCommand:
         gcode_params = shlex.split(gcode_params)
         reactor = self.printer.get_reactor()
         try:
-            logging.info("%s", self.command + gcode_params)
             proc = subprocess.Popen(
                 self.command + gcode_params, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         except Exception:
