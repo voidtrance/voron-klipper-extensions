@@ -42,12 +42,16 @@ class StateNotify:
             self.pause_timer = None
         self.gcode.register_command("STATE_NOTIFY_STATE", self.cmd_STATE_NOTIFY_STATE,
                                     False, desc=self.cmd_STATE_NOTIFY_STATE_help)
-        self.printer.register_event_handler("klippy:ready",
-                                            lambda: self._klippy_handler("ready"))
+        self.printer.register_event_handler("klippy:mcu_identify",
+                                            self._register_ready_handler)
         self.printer.register_event_handler("klippy:shutdown",
                                             lambda: self._klippy_handler("shutdown"))
         self.printer.register_event_handler("klippy:disconnect",
                                             lambda: self._klippy_handler("disconnect"))
+
+    def _register_ready_handler(self):
+        self.printer.register_event_handler("klippy:ready",
+                                            lambda: self._klippy_handler("ready"))
 
     def _klippy_handler(self, state):
         self.handle_state_change(state, self.reactor.monotonic())

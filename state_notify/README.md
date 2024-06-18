@@ -144,14 +144,12 @@ a result, the printer's idle timeout becomes the `idle_timeout:timeout` value pl
 Klipper executes event handlers for the various events it triggers in the order in which the
 event handlers have been registered.
 
-The `state_notify` module registers a handler for the `READY` event, which is used to execute
-the `on_ready_gcode` template. Since the template may end up executing arbitrary GCode
-commands, it is possible for the `state_notify` module to cause Klipper crashes during the
-execution of the `on_ready_gcode` template.
-
-A crash may happen because the `on_ready_gcode` template is executing GCode handled by an
-object, which has not gone through it complete setup sequence - the object's `READY` handler
-has not been called yet since it was register after the `state_notify` handler.
+While the `state_notify` extension is designed to register its `READY` handler as the last
+handler in the list, thus ensuring that all object `READY` handlers run before the
+`state_notify` handler, a crash may happen if the `on_ready_gcode` template is executing
+GCode handled by an object, which has not gone through its complete setup sequence -
+the object's `READY` handler has not been called yet since it was register after the
+`state_notify` handler.
 
 Unfortunately, there isn't a way that this can be handled from within the `state_notify`
 module since there is no way to know what other modules will register `READY` handlers and
