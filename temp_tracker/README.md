@@ -34,7 +34,7 @@ The extension has the following configuration settings:
 The extension provides the average through the `printer` status state:
 * `printer["temp_tracker <name>"].average` provides the average temperature
 over the defined period.
-* `printer.temp_tracker["<name>"].period` provides the defined period.
+* `printer["temp_tracker <name>"].period` provides the defined period.
 
 The extension also adds the following two commands:
 * `TEMP_TRACKER_GET TRACKER=<name> [PERIOD=<secs]` shows the average tracker
