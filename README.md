@@ -11,6 +11,7 @@ The repository provide the following Klipper extensions:
 | [loop_macro](/loop_macro) | Looping G-Code macro variant |
 | [settling_probe](/settling_probe) | Execute a "settling" probe sample to settle the gantry |
 | [state_notify](/state_notify) | Improved printer state notifications |
+| [temp_tracker](/temp_tracker) | Average temperature tracking |
 
 ## Setup and Removal
 ### Installation
