@@ -106,9 +106,9 @@ class SettlingProbe(PrinterProbe):
                                                      self.mcu_probe.query_endstop)
         self.probe_offsets = ProbeOffsetsHelper(probe_config)
         self.probe_session = SettlingProbeSessionHelper(probe_config, config, self.mcu_probe)
-        self.printer.register_event_handler("klippy:ready", self.handle_ready)
+        self.printer.register_event_handler("klippy:mcu_identify", self.handle_mcu_identify)
 
-    def handle_ready(self):
+    def handle_mcu_identify(self):
         # This is the hacky bit:
         # The "klippy:ready" event is sent after all configuration has been
         # read and all object created. So, we are sure that the 'probe'
