@@ -3,78 +3,97 @@
 # Copyright (C) 2022-2023 Mitko Haralanov <voidtrance@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import logging
 
-FRAME_RATE = 24
-INTERPOLATE_STEP_TIME = 1.0 / FRAME_RATE
+FRAME_COUNT = 24
+INTERPOLATE_STEP_TIME = 1.0 / FRAME_COUNT
 
 
 class LedInterpolate:
     def __init__(self, config):
         self.printer = config.get_printer()
         self.gcode = self.printer.lookup_object('gcode')
-        self.led = self.printer.load_object(config, 'led')
         self.gcode.register_command("LED_INTERPOLATE",
                                     self.cmd_LED_INTERPOLATE, False,
                                     desc=self.cmd_LED_INTERPOLATE_help)
+        self.printer.register_event_handler("klippy:ready", self.setup)
 
-    def compute_color(self, start, end, factor):
-        return round(((end - start) * factor) + start, 5)
+    def setup(self):
+        # Klipper no longer uses the "led" module as the object which
+        # collects all the configured LED objects. As a result, we can't
+        # use it to lookup the LED object specified in the
+        # LED_INTERPOLATE command. We have to get the list of all the
+        # different LED types.
+        #
+        # In order to avoid doing this lookup all the time, cache the
+        # sets of objects here.
+        self.leds = self.printer.lookup_objects("led") + \
+                self.printer.lookup_objects("neopixel") + \
+                self.printer.lookup_objects("dotstar") + \
+                self.printer.lookup_objects("pca9533") + \
+                self.printer.lookup_objects("pca9632")
 
-    cmd_LED_INTERPOLATE_help = "Smootly transition LEDs between two colors"
+    def compute_color(self, start, end, runtime):
+        factor = self.step / self.runtime
+        return [round((end[x] - start[x]) * factor + start[x], 5) \
+                for x in range(len(start))]
 
-    def _interpolate_leds(self, eventtime):
-        all_done = False
+    def interpolate_leds(self, eventtime):
         reactor = self.printer.get_reactor()
-        led_count = self.led_helper.get_led_count()
-        for index in range(led_count):
-            current_state = [round(c * 255)
-                             for c in self.led_helper.led_state[index]]
-
-            if current_state == self.interpolation_params[0]:
-                all_done = True
-                continue
-
-            target_colors, factor = self.interpolation_params
-            colors = self.current_colors[index]
-            red = self.compute_color(colors[0], target_colors[0], factor)
-            green = self.compute_color(colors[1], target_colors[1], factor)
-            blue = self.compute_color(colors[2], target_colors[2], factor)
-            white = self.compute_color(colors[3], target_colors[3], factor)
-
-            self.led_helper.set_color(index,
-                                      (round(red / 255, 2),
-                                       round(green / 255, 2),
-                                       round(blue / 255, 2),
-                                       round(white / 255, 2)))
-            self.current_colors[index] = [red, green, blue, white]
-            all_done = False
-        self.led_helper.check_transmit(None)
-        if all_done or self.printer.is_shutdown():
+        if self.printer.is_shutdown():
             return reactor.NEVER
+        led_count = self.target.led_helper.led_count
+        if self.current_state == [self.target_colors] * led_count:
+            return reactor.NEVER
+        now = reactor.monotonic()
+        runtime = now - self.timestep
+        self.timestep = now
+        self.step = min(self.step + runtime, self.runtime)
+        for index in range(led_count):
+            self.current_state[index] = self.compute_color(self.current_state[index],
+                                                           self.target_colors,
+                                                           runtime)
+            self.target.led_helper._set_color(index, self.current_state[index])
+        self.target.led_helper._check_transmit()
         return reactor.monotonic() + INTERPOLATE_STEP_TIME
 
+    def find_leds(self, name):
+        try:
+            module, name = name.split(maxsplit=1)
+        except ValueError:
+            module = None
+        leds = [led for led in self.leds if led[0].endswith(name)]
+        if len(leds) == 1:
+            return leds[0][1]
+        if module is None:
+            return None
+        leds = [led for led in leds if led[0] == f"{module} {name}"]
+        if len(leds) != 1:
+            return None
+        return leds[0][1]
+    
+    cmd_LED_INTERPOLATE_help = "Smootly transition LEDs between two colors"
     def cmd_LED_INTERPOLATE(self, gcmd):
         target_name = gcmd.get("LED")
-        target_colors = [
-            round(gcmd.get_float("RED", 0., minval=0.0, maxval=1.0) * 255),
-            round(gcmd.get_float("GREEN", 0., minval=0.0, maxval=1.0) * 255),
-            round(gcmd.get_float("BLUE", 0., minval=0.0, maxval=1.0) * 255),
-            round(gcmd.get_float("WHITE", 0., minval=0.0, maxval=1.0) * 255)]
-        runtime = gcmd.get_float("DURATION", 0.)
+        self.target = self.find_leds(target_name)
+        if self.target is None:
+            gcmd.error(f"Could not find LED object '{target_name}'." + \
+                       "only the name, try using the type as well, i.e. " + \
+                       "'LED=\"neopixel <name>\"'")
+            return
+        
+        self.target_colors = [
+            gcmd.get_float("RED", 0., minval=0.0, maxval=1.0),
+            gcmd.get_float("GREEN", 0., minval=0.0, maxval=1.0),
+            gcmd.get_float("BLUE", 0., minval=0.0, maxval=1.0),
+            gcmd.get_float("WHITE", 0., minval=0.0, maxval=1.0)]
+        self.runtime = gcmd.get_float("DURATION", 1., minval=1.)
 
-        factor = (100 / (runtime / INTERPOLATE_STEP_TIME)) / 100
-        if target_name not in self.led.led_helpers:
-            raise gcmd.error("Unknown LED object '%s'" % target_name)
-
-        self.led_helper = self.led.led_helpers[target_name]
-        self.interpolation_params = (target_colors, factor)
-        self.current_colors = [[round(c * 255, 2) for c in led]
-                               for led in self.led_helper.led_state]
+        self.current_state = self.target.get_status(0)["color_data"]
+        self.step = 0
         reactor = self.printer.get_reactor()
-        self.timer = reactor.register_timer(self._interpolate_leds,
+        self.timestep = reactor.monotonic()
+        self.timer = reactor.register_timer(self.interpolate_leds,
                                             reactor.NOW)
-
 
 def load_config(config):
     return LedInterpolate(config)
