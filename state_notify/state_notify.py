@@ -28,6 +28,7 @@ class StateNotify:
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object("gcode")
         self.gcode_macro = self.printer.load_object(config, "gcode_macro")
+        self.idle_timeout = self.printer.load_object(config, "idle_timeout")
         self.idle_gcode = config.get("on_idle_gcode", '')
         self.gcode_templates = {
             'ready': self.gcode_macro.load_template(config, "on_ready_gcode", ''),
@@ -89,12 +90,11 @@ class StateNotify:
             # needs to be executed as part of the 'idle_timeout:gcode' config. Otherwise,
             # the printer jumps out of "idle" state because the 'state_notify:on_idle_gcode'
             # GCode gets executed after the 'idle_timeout' state changes to "Idle".
-            idle_timeout = self.printer.lookup_object("idle_timeout")
             configfile = self.printer.lookup_object("configfile")
             config_status = configfile.get_status(self.reactor.monotonic())
-            idle_gcode = config_status["config"]["idle_timeout"].get("gcode", "") + \
-                        self.idle_gcode
-            idle_timeout.idle_gcode = TemplateWrapper(self.printer, self.gcode_macro.env,
+            idle_config = config_status["config"].get("idle_timeout", None)
+            idle_gcode = (idle_config.get("gcode", "") if idle_config else "") + self.idle_gcode
+            self.idle_timeout.idle_gcode = TemplateWrapper(self.printer, self.gcode_macro.env,
                                                       "idle_timeout:gcode", idle_gcode)
             
             # Handle a corner case in which we may miss a transition to "active"
