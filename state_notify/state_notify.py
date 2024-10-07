@@ -25,6 +25,7 @@ class StateNotify:
     def __init__(self, config):
         self.printer = config.get_printer()
         self.inactive_timeout = config.getfloat("inactive_timeout", 0.)
+        self.heaters_keep_active = config.getboolean("heaters_active", False)
         self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object("gcode")
         self.gcode_macro = self.printer.load_object(config, "gcode_macro")
@@ -213,20 +214,32 @@ class StateNotify:
 
     # Check whether the printer is still active. This is used to detect
     # activity, which is not readily detectable from the idle_timeout
-    # state. Such activity includes active heaters, for example.
+    # state.
+    #
+    # When it comes to printer activity tracked by the idle_timeout
+    # module, Klipper only considers toolhead updates as activity.
+    # If we want to keep the printer in the "active" state when
+    # heaters are active, we need special handling.
     def _check_printer_active(self, eventtime):
         heaters = self.pheaters.get_all_heaters()
+        heaters_active = False
         for heater_name in heaters:
             heater = self.pheaters.lookup_heater(heater_name)
             status = heater.get_status(eventtime)
             if status["target"] > 0.:
-                return True
-        return False
+                log(eventtime, f"Heater '{heater_name}' target: {status['target']}")
+                heaters_active = True
+                break
+        if heaters_active:
+            self._run_template(eventtime, "noop")
+        return heaters_active
 
     # Transition to the "inactive" state. This callback is called when the
     # inactive timeout elapses.
     def _inactive_timer_handler(self, eventtime):
         if self._check_printer_active(eventtime):
+            if self.heaters_keep_active:
+                self._run_template(eventtime, 'noop')
             return eventtime + self.inactive_timeout
 
         self.ignore_change = True

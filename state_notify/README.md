@@ -84,24 +84,51 @@ configuration. The section has the following options/configuration:
 
 ```ini
 [state_notify]
-#inactive_timeout:
+inactive_timeout: 0.0
 #     Duration (in seconds) of no activity before the printer enters the `inactive`
-#     state.
-#on_ready_gcode:
+#     state. Default: 0.0 - inactive timeout is disabled.
+heaters_active: False
+#     If this is set to 1, active heaters will keep the printer in the `active`
+#     state. Default is 0.
+#     This option is not enabled by default because when enable, an active
+#     heater will not be turned off when Klipper reaches the idle timeout. Please,
+#     see warning below.
+on_ready_gcode: <None>
 #     GCode template that will be executed when the printer is done initializing
 #     and is ready.
-#on_active_gcode:
+on_active_gcode: <None>
 #     GCode template executed when the printer becomes active. This state switch
 #     is usually triggered by the execution of other GCode commands or usage of
 #     the display menu.
-#on_inactive_gcode:
+on_inactive_gcode: <None>
 #     GCode template executed when the `inactive_timeout` duration elapses. The
 #     timer starts after the completion of any previous activity. This includes
 #     any GCode commands or interaction with the display menu.
-#on_idle_gcode:
+on_idle_gcode: <None>
 #     GCode template executed when the `idle_timeout` timeout duration elapses.
 #     This GCode is executed in addition to the `idle_timeout::gcode` template.
 ```
+
+> **Warning** **Warning**
+>
+> **USE AT YOUR OWN RISK!!**
+>
+> The `heaters_active` setting should be turned on with extreme care. With this
+> setting on, the printer will remain active while any heater(s) are on.
+>
+> It is very common for Klipper's `idle_timeout` GCode template to contain
+> commands to turn off all heaters This is done as a safety measure so heaters
+> don't remain on indefinitely.
+> 
+> Enabling `heaters_active` does exactly that. It will prevent Klipper's
+> built-in idle timeout detection from turning them off. As a result, the
+> heaters will remain on until explicitly turned off, which could be a potential
+> fire hazzard.
+
+The difference between using `heaters_active` and removing the GCode commands
+from the `idle_timeout` template is that `heaters_active` will keep the printer
+in the `active` state while `idle_timeout` will move the printer to the `idle`
+state.
 
 > **Note**
 >
