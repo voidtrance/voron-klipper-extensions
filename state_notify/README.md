@@ -45,7 +45,6 @@ stateDiagram-v2
    [*]-->ready
    ready-->active
    ready-->printing
-   ready-->inactive
    ready-->disconnect
    ready-->shutdown
    active-->inactive

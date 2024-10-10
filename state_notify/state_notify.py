@@ -36,7 +36,6 @@ class StateNotify:
             'inactive': self.gcode_macro.load_template(config, "on_inactive_gcode", '')
         }
         self.ignore_change = False
-        self.trigger_on_sync_update = False
         self.state = "none"
         self.menu = self.sdcard = self.print_stats = None
         self.menu_check_timer = self.inactive_timer = self.delayed_gcode_timer = \
@@ -51,69 +50,65 @@ class StateNotify:
                                             lambda: self._klippy_handler("disconnect"))
 
     def _register_ready_handler(self):
+        # Look up the objects below when the printer has reached the "Ready"
+        # state. Doing so before this point may result in errors due to the
+        # fact that Klipper creates objects as it parses the configuration and
+        # the object might not have been created by the time this module is
+        # initialized.
+        self.sdcard = self.printer.lookup_object("virtual_sdcard")
+        self.print_stats = self.printer.lookup_object("print_stats")
+        self.pheaters = self.printer.lookup_object("heaters")
+        self.menu = self.printer.lookup_object("menu", None)
+
+        # Any "idle" gcode specified in the 'state_notife:on_idle_gcode' config
+        # needs to be executed as part of the 'idle_timeout:gcode' config. Otherwise,
+        # the printer jumps out of "idle" state because the 'state_notify:on_idle_gcode'
+        # GCode gets executed after the 'idle_timeout' state changes to "Idle".
+        configfile = self.printer.lookup_object("configfile")
+        config_status = configfile.get_status(self.reactor.monotonic())
+        idle_config = config_status["config"].get("idle_timeout", {})
+        idle_gcode = idle_config.get("gcode", "") + self.idle_gcode
+        self.idle_timeout.idle_gcode = TemplateWrapper(self.printer, self.gcode_macro.env,
+                                                  "idle_timeout:gcode", idle_gcode)
+
+        self.inactive_timer = self.reactor.register_timer(self._inactive_timer_handler,
+                                                      self.reactor.monotonic() + 
+                                                      self.inactive_timeout)
+        self.pause_timer = self.reactor.register_timer(self._print_pause_handler)
+        self.printer.register_event_handler("idle_timeout:idle",
+                                        lambda e: self._state_handler("idle_idle", e))
+        self.printer.register_event_handler("idle_timeout:ready",
+                                        lambda e: self._state_handler("idle_ready", e))
+        self.printer.register_event_handler("idle_timeout:printing",
+                                        lambda e: self._state_handler("idle_printing", e))
+        if self.menu:
+            self.printer.register_event_handler("menu:begin",
+                                        lambda e: self._state_handler("menu_begin",
+                                                                      self.reactor.monotonic()))
+            self.printer.register_event_handler("menu:exit",
+                                        lambda e: self._state_handler("menu_exit",
+                                                                      self.reactor.monotonic()))
+            self.menu_check_timer = self.reactor.register_timer(self._menu_check_timer_handler)
+    
         self.printer.register_event_handler("klippy:ready",
                                             lambda: self._klippy_handler("ready"))
 
     def _klippy_handler(self, state):
         self.handle_state_change(state, self.reactor.monotonic())
         if state == "ready":
-            # Look up the objects below when the printer has reached the "Ready"
-            # state. Doing so before this point may result in errors due to the
-            # fact that Klipper creates objects as it parses the configuration and
-            # the object might not have been created by the time this module is
-            # initialized.
-            self.sdcard = self.printer.lookup_object("virtual_sdcard")
-            self.print_stats = self.printer.lookup_object("print_stats")
-            self.pheaters = self.printer.lookup_object("heaters")
-            self.printer.register_event_handler("idle_timeout:idle",
-                                                lambda e: self._state_handler("idle_idle", e))
-            self.printer.register_event_handler("idle_timeout:ready",
-                                                lambda e: self._state_handler("idle_ready", e))
-            self.printer.register_event_handler("idle_timeout:printing",
-                                                lambda e: self._state_handler("idle_printing", e))
-            self.inactive_timer = \
-                self.reactor.register_timer(self._inactive_timer_handler,
-                                            self.reactor.monotonic() + self.inactive_timeout)
-            self.pause_timer = \
-                self.reactor.register_timer(self._print_pause_handler)
-
-            self.menu = self.printer.lookup_object("menu", None)
-            if self.menu:
-                self.printer.register_event_handler("menu:begin",
-                                                    lambda e: self._state_handler("menu_begin", e))
-                self.printer.register_event_handler("menu:exit",
-                                                    lambda e: self._state_handler("menu_exit", e))
-                self.menu_check_timer = \
-                    self.reactor.register_timer(self._menu_check_timer_handler)
-
-            # Any "idle" gcode specified in the 'state_notife:on_idle_gcode' config
-            # needs to be executed as part of the 'idle_timeout:gcode' config. Otherwise,
-            # the printer jumps out of "idle" state because the 'state_notify:on_idle_gcode'
-            # GCode gets executed after the 'idle_timeout' state changes to "Idle".
-            configfile = self.printer.lookup_object("configfile")
-            config_status = configfile.get_status(self.reactor.monotonic())
-            idle_config = config_status["config"].get("idle_timeout", None)
-            idle_gcode = (idle_config.get("gcode", "") if idle_config else "") + self.idle_gcode
-            self.idle_timeout.idle_gcode = TemplateWrapper(self.printer, self.gcode_macro.env,
-                                                      "idle_timeout:gcode", idle_gcode)
-            
-            # Handle a corner case in which we may miss a transition to "active"
-            # state if the printer is executing commands right after a restart.
-            self.trigger_on_sync_update = True
-            self.printer.register_event_handler("toolhead:sync_print_time",
-                                                lambda curr, print, est: self._sync_update_handler(curr))
-        elif state == "shutdown":
+            # Automaticaly transition from "ready" to "active".
+            # If `on_ready_gcode` is present, it would have already
+            # transition the state to "ready" during the execution of
+            # the template.
+            if self.state != "active":
+                self.handle_state_change("active", self.reactor.monotonic())
+        if state == "shutdown":
             if self.inactive_timer:
                 self.reactor.unregister_timer(self.inactive_timer)
             if self.menu_check_timer:
                 self.reactor.unregister_timer(self.menu_check_timer)
             if self.pause_timer:
                 self.reactor.unregister_timer(self.pause_timer)
-
-    def _sync_update_handler(self, eventtime):
-        if self.trigger_on_sync_update:
-            self.trigger_on_sync_update = False
-            self._state_handler("idle_printing", eventtime)
 
     def _check_printer_printing(self):
         # VirtualSD.is_active() only returns True if the printer is actively
@@ -125,7 +120,7 @@ class StateNotify:
             (self.sdcard.file_path() and self.sdcard.progress() > 0 and self.sdcard.progress())
     
     def _state_handler(self, state, eventtime):
-        log(eventtime, "Substate: %s", state)
+        log(eventtime, "State: %s, Substate: %s", self.state, state)
         template = None
         if state == "idle_idle":
             self.reactor.update_timer(self.pause_timer, self.reactor.NEVER)
@@ -135,14 +130,13 @@ class StateNotify:
                 self.reactor.update_timer(self.menu_check_timer,
                                           self.reactor.NEVER)
                 self.menu.exit()
-        elif (state == "idle_ready" or state == "menu_exit"):
+        elif state in ("idle_ready", "menu_exit"):
             menu_is_running = False
             if self.menu:
                 menu_is_running = self.menu.is_running()
             if self.state in ("ready", "active", "printing"):
-                if self.state == "printing":
-                    self.reactor.update_timer(self.pause_timer,self.reactor.NEVER)
-                    self.handle_state_change("active", eventtime)
+                if self.state != "active":
+                    self.reactor.update_timer(self.pause_timer, self.reactor.NEVER)
                 if not menu_is_running:
                     self.reactor.update_timer(self.inactive_timer,
                                               self.reactor.monotonic() + self.inactive_timeout)
