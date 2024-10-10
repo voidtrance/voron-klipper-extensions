@@ -33,7 +33,9 @@ class StateNotify:
         self.gcode_templates = {
             'ready': self.gcode_macro.load_template(config, "on_ready_gcode", ''),
             'active': self.gcode_macro.load_template(config, "on_active_gcode", ''),
-            'inactive': self.gcode_macro.load_template(config, "on_inactive_gcode", '')
+            'inactive': self.gcode_macro.load_template(config, "on_inactive_gcode", ''),
+            'noop': TemplateWrapper(self.printer, self.gcode_macro.env,
+                                    "state_notify:noop", "G4 P1"),
         }
         self.ignore_change = False
         self.state = "none"
@@ -168,6 +170,7 @@ class StateNotify:
         if not self.menu.is_running():
             self._state_handler("menu_exit", eventtime)
             return self.reactor.NEVER
+        self._run_template(eventtime, "noop")
         return self.reactor.monotonic() + TIMER_DURATION
 
     # Timer to monitor print statistics for state changes. This is needed to catch
@@ -218,7 +221,6 @@ class StateNotify:
             status = heater.get_status(eventtime)
             if status["target"] > 0.:
                 return True
-
         return False
 
     # Transition to the "inactive" state. This callback is called when the
