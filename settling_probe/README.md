@@ -15,8 +15,8 @@ The extension replaces the default `probe` Klipper object with the modified
 one in order to allow all commands/operations that perform Z probing to
 benefit from this.
 
-To enable the module, add the following to your `printer.cfg` file right after
-the `[probe]` section:
+To enable the module, add the following configuration section to your
+`printer.cfg`:
 
 ```ini
 [settling_probe]
@@ -25,6 +25,10 @@ the `[probe]` section:
 #   Setting this to 'True' will enable the throw-away sample for all
 #   commands/operations that perform Z probing (QGL, Z tilt, Bed Mesh,
 #   Screw Tilt, etc.)
+#sample_count:
+#   The number of settling sample to take. Default is 1.
+#   This setting should not be needed since most systems require only
+#   a single sample to settle.
 ```
 
 The module also augments the `PROBE` and `PROBE_ACCURACY` commands with an

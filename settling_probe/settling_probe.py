@@ -54,17 +54,19 @@ class SettlingProbeSessionHelper(ProbeSessionHelper):
     def __init__(self, probe_config, config, mcu_probe):
         ProbeSessionHelper.__init__(self, probe_config, mcu_probe)
         self.settling_sample = config.getboolean('settling_sample', False)
+        self.probe_count = config.getint('sample_count', 1)
 
     def _run_settling_probe(self, gcmd):
         toolhead = self.printer.lookup_object('toolhead')
-        gcmd.respond_info("Settling sample (ignored)...")
+        gcmd.respond_info("Ignored settling sample(s) (%s)..." % self.probe_count)
         speed = gcmd.get_float("PROBE_SPEED", self.speed, above=0.)
         lift_speed = self.get_probe_params(gcmd)["lift_speed"]
         sample_retract_dist = gcmd.get_float("SAMPLE_RETRACT_DIST",
                                              self.sample_retract_dist, minval=0.)
         probexy = toolhead.get_position()[:2]
-        pos = self._probe(speed)
-        toolhead.manual_move(probexy + [pos[2] + sample_retract_dist], lift_speed)
+        for _ in range(self.probe_count):
+            pos = self._probe(speed)
+            toolhead.manual_move(probexy + [pos[2] + sample_retract_dist], lift_speed)
 
     def run_probe(self, gcmd):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
@@ -110,10 +112,10 @@ class SettlingProbe(PrinterProbe):
 
     def handle_mcu_identify(self):
         # This is the hacky bit:
-        # The "klippy:ready" event is sent after all configuration has been
+        # The "klippy:mcu_identify" event is sent after all configuration has been
         # read and all object created. So, we are sure that the 'probe'
         # object already exists.
-        # So, we can reach into the printer object and replace the existing 'probe'
+        # So, we can reach into the printer objects and replace the existing 'probe'
         # object with this one.
         probe_obj = self.printer.objects.pop('probe', None)
         self.printer.objects['probe'] = self
