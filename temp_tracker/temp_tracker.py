@@ -61,7 +61,7 @@ class TempTracker:
 
     def _get_average(self, period=math.inf):
         period = self._get_period(period)
-        return sum(self._data) / period
+        return round(sum(self._data) / period, 5)
     
     def get_status(self, eventtime):
         return {"average" : self._get_average(),
