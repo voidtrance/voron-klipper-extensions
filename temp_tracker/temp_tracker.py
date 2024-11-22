@@ -56,8 +56,11 @@ class TempTracker:
             self._data.append(temp)
         return eventtime + 1.
     
+    def _get_period(self, period=math.inf):
+        return min(len(self._data) if self._data else 1, period)
+
     def _get_average(self, period=math.inf):
-        period = min(len(self._data) if self._data else 1, period)
+        period = self._get_period(period)
         return sum(self._data) / period
     
     def get_status(self, eventtime):
@@ -66,7 +69,8 @@ class TempTracker:
 
     def query(self, gcmd):
         gcode = self.printer.lookup_object("gcode")
-        secs = gcmd.get_int("PERIOD", default=math.inf, minval=1, maxval=self.period)
+        secs = gcmd.get_int("PERIOD", default=self.period, minval=1, maxval=self.period)
+        secs = self._get_period(secs)
         average = self._get_average(secs)
         gcode.respond_info("Average temp for the past %s seconds: %s" % \
                            (secs, average))
