@@ -171,7 +171,8 @@ class StateNotify:
         if not self.menu.is_running():
             self._state_handler("menu_exit", eventtime)
             return self.reactor.NEVER
-        self._run_template(eventtime, "noop")
+        if self.state not in ("paused", "printing"):
+            self._run_template(eventtime, "noop")
         return self.reactor.monotonic() + TIMER_DURATION
 
     # Timer to monitor print statistics for state changes. This is needed to catch
@@ -230,7 +231,7 @@ class StateNotify:
                 log(eventtime, f"Heater '{heater_name}' target: {status['target']}")
                 heaters_active = True
                 break
-        if heaters_active:
+        if heaters_active and self.state not in ("paused", "printing"):
             self._run_template(eventtime, "noop")
         return heaters_active
 
