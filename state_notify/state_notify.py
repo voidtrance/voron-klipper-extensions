@@ -120,7 +120,7 @@ class StateNotify:
         # VirtualSD.file_path() and VirtualSD.progress() since the class does store
         # the currently printing file, the file size, and position across pauses.
         return self.sdcard.is_active() or \
-            (self.sdcard.file_path() and self.sdcard.progress() > 0 and self.sdcard.progress())
+            (self.sdcard.file_path() is not None and self.sdcard.progress() > 0.)
     
     def _state_handler(self, state, eventtime):
         log(eventtime, "State: %s, Substate: %s", self.state, state)
