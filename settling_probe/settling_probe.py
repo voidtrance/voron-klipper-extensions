@@ -5,7 +5,8 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 from .probe import ProbeEndstopWrapper, PrinterProbe, ProbeOffsetsHelper, \
-    ProbeCommandHelper, ProbeSessionHelper
+    ProbeCommandHelper, ProbeSessionHelper, ProbeParameterHelper, \
+    HomingViaProbeHelper
 import configparser
 import logging
 
@@ -51,8 +52,8 @@ class SettlingProbeCommandHelper(ProbeCommandHelper):
         return ret
 
 class SettlingProbeSessionHelper(ProbeSessionHelper):
-    def __init__(self, probe_config, config, mcu_probe):
-        ProbeSessionHelper.__init__(self, probe_config, mcu_probe)
+    def __init__(self, probe_config, config, mcu_probe, start_session_cb):
+        ProbeSessionHelper.__init__(self, probe_config, mcu_probe, start_session_cb)
         self.settling_sample = config.getboolean('settling_sample', False)
         self.probe_count = config.getint('sample_count', 1)
 
@@ -107,7 +108,10 @@ class SettlingProbe(PrinterProbe):
         self.cmd_helper = SettlingProbeCommandHelper(probe_config, self,
                                                      self.mcu_probe.query_endstop)
         self.probe_offsets = ProbeOffsetsHelper(probe_config)
-        self.probe_session = SettlingProbeSessionHelper(probe_config, config, self.mcu_probe)
+        self.param_helper = ProbeParameterHelper(config)
+        self.homing_helper = HomingViaProbeHelper(config, self.mcu_probe, self.param_helper)
+        self.probe_session = SettlingProbeSessionHelper(probe_config, config, self.mcu_probe,
+                                                        self.homing_helper.start_probe_session)
         self.printer.register_event_handler("klippy:mcu_identify", self.handle_mcu_identify)
 
     def handle_mcu_identify(self):
