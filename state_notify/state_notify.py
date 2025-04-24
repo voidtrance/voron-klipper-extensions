@@ -199,7 +199,10 @@ class StateNotify:
         if self.gcode.get_mutex().test():
             return eventtime + GCODE_MUTEX_DELAY
         self._run_gcode(template)
-        self.reactor.unregister_timer(self.delayed_gcode_timer)
+        try:
+            self.reactor.unregister_timer(self.delayed_gcode_timer)
+        except ValueError:
+            pass
         return self.reactor.NEVER
 
     # Attempt to run the gcode template. If the gcode mutex is not taken, run the
