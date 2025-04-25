@@ -52,22 +52,19 @@ class SettlingProbeCommandHelper(ProbeCommandHelper):
         return ret
 
 class SettlingProbeSessionHelper(ProbeSessionHelper):
-    def __init__(self, probe_config, config, mcu_probe, start_session_cb):
-        ProbeSessionHelper.__init__(self, probe_config, mcu_probe, start_session_cb)
+    def __init__(self, probe_config, config, param_helper, start_session_cb):
+        ProbeSessionHelper.__init__(self, probe_config, param_helper, start_session_cb)
         self.settling_sample = config.getboolean('settling_sample', False)
         self.probe_count = config.getint('sample_count', 1)
 
     def _run_settling_probe(self, gcmd):
         toolhead = self.printer.lookup_object('toolhead')
         gcmd.respond_info("Ignored settling sample(s) (%s)..." % self.probe_count)
-        speed = gcmd.get_float("PROBE_SPEED", self.speed, above=0.)
-        lift_speed = self.get_probe_params(gcmd)["lift_speed"]
-        sample_retract_dist = gcmd.get_float("SAMPLE_RETRACT_DIST",
-                                             self.sample_retract_dist, minval=0.)
+        params = self.param_helper.get_probe_params(gcmd)
         probexy = toolhead.get_position()[:2]
         for _ in range(self.probe_count):
-            pos = self._probe(speed)
-            toolhead.manual_move(probexy + [pos[2] + sample_retract_dist], lift_speed)
+            pos = self._probe(gcmd)
+            toolhead.manual_move(probexy + [pos[2] + params["sample_retract_dist"]], params["lift_speed"])
 
     def run_probe(self, gcmd):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
@@ -108,9 +105,9 @@ class SettlingProbe(PrinterProbe):
         self.cmd_helper = SettlingProbeCommandHelper(probe_config, self,
                                                      self.mcu_probe.query_endstop)
         self.probe_offsets = ProbeOffsetsHelper(probe_config)
-        self.param_helper = ProbeParameterHelper(config)
-        self.homing_helper = HomingViaProbeHelper(config, self.mcu_probe, self.param_helper)
-        self.probe_session = SettlingProbeSessionHelper(probe_config, config, self.mcu_probe,
+        self.param_helper = ProbeParameterHelper(probe_config)
+        self.homing_helper = HomingViaProbeHelper(probe_config, self.mcu_probe, self.param_helper)
+        self.probe_session = SettlingProbeSessionHelper(probe_config, config, self.param_helper,
                                                         self.homing_helper.start_probe_session)
         self.printer.register_event_handler("klippy:mcu_identify", self.handle_mcu_identify)
 
