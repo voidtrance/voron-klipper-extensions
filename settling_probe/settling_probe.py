@@ -41,12 +41,16 @@ class SettlingProbeCommandHelper(ProbeCommandHelper):
     def cmd_PROBE_ACCURACY(self, gcmd):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.probe.probe_session.settling_sample)
         # Turn off the probe sessions settling_sample setting. We'll handle it
-        # ourselfs. Otherwise, the probe session will do a setlling sampel for
+        # ourselfs. Otherwise, the probe session will do a setlling sample for
         # each accuracy sample, which is not what we want.
         session_setting = self.probe.probe_session.settling_sample
         self.probe.probe_session.settling_sample = False
         if settling_sample:
+            gcode = self.printer.lookup_object('gcode')
+            fo_gcmd = gcode.create_gcode_command("", "", dict())
+            probe_session = self.probe.start_probe_session(fo_gcmd)
             self.probe.probe_session._run_settling_probe(gcmd)
+            probe_session.end_probe_session()
         ret = ProbeCommandHelper.cmd_PROBE_ACCURACY(self, gcmd)
         self.probe.probe_session.settling_sample = session_setting
         return ret
