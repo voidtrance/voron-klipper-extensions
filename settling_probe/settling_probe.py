@@ -110,7 +110,8 @@ class SettlingProbe(PrinterProbe):
                                                      self.mcu_probe.query_endstop)
         self.probe_offsets = ProbeOffsetsHelper(probe_config)
         self.param_helper = ProbeParameterHelper(probe_config)
-        self.homing_helper = HomingViaProbeHelper(probe_config, self.mcu_probe, self.param_helper)
+        self.homing_helper = HomingViaProbeHelper(probe_config, self.mcu_probe, self.probe_offsets,
+                                                  self.param_helper)
         self.probe_session = SettlingProbeSessionHelper(probe_config, config, self.param_helper,
                                                         self.homing_helper.start_probe_session)
         self.printer.register_event_handler("klippy:mcu_identify", self.handle_mcu_identify)
