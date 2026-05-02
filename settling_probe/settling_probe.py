@@ -60,6 +60,7 @@ class SettlingProbeSessionHelper(ProbeSessionHelper):
         ProbeSessionHelper.__init__(self, probe_config, param_helper, start_session_cb)
         self.settling_sample = config.getboolean('settling_sample', False)
         self.probe_count = config.getint('sample_count', 1)
+        self.z_offset = probe_config.getfloat('z_offset')
 
     def _run_settling_probe(self, gcmd):
         toolhead = self.printer.lookup_object('toolhead')
@@ -68,7 +69,7 @@ class SettlingProbeSessionHelper(ProbeSessionHelper):
         probexy = toolhead.get_position()[:2]
         for _ in range(self.probe_count):
             pos = self._probe(gcmd)
-            toolhead.manual_move(probexy + [pos[2] + params["sample_retract_dist"]], params["lift_speed"])
+            toolhead.manual_move(probexy + [pos.bed_z + self.z_offset + params["sample_retract_dist"]], params["lift_speed"])
 
     def run_probe(self, gcmd):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
