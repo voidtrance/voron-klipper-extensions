@@ -1,3 +1,14 @@
+> [!WARNING]
+> **I no longer have a Klipper-based printer. I am only able to use the
+> [Vortex Emulator](https://github.com/voidtrance/vortex) to test any
+> changes.**
+>
+> The emulator has limited capabilities, so there might be situations
+> where some testing may be required from bug submitters.
+>
+> For anyone willing to help with testing fixes, I appreciate your
+> help and patience. Thank you.
+
 # voron-klipper-extensions
 A set of Klipper extensions designed to improve operation of Voron printers.
 
