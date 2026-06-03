@@ -69,7 +69,7 @@ class SettlingProbeSessionHelper(SampleAveragingHelper):
         probexy = toolhead.get_position()[:2]
         for _ in range(self.probe_count):
             pos = self._probe(gcmd)
-            toolhead.manual_move(probexy + [pos[2] + params["sample_retract_dist"]], params["lift_speed"])
+            toolhead.manual_move(probexy + [pos.test_z + params["sample_retract_dist"]], params["lift_speed"])
 
     def run_probe(self, gcmd):
         settling_sample = gcmd.get_int("SETTLING_SAMPLE", self.settling_sample)
