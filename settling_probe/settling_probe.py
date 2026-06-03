@@ -5,13 +5,13 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 from .probe import ProbeEndstopWrapper, PrinterProbe, ProbeOffsetsHelper, \
-    ProbeCommandHelper, ProbeSessionHelper, ProbeParameterHelper, \
-    HomingViaProbeHelper
+    ProbeCommandHelper, SampleAveragingHelper, ProbeParameterHelper, \
+    HomingViaProbeHelper, DescendToEndstopHelper
 import configparser
 import logging
 
 class SettlingProbeEndstopWrapper(ProbeEndstopWrapper):
-    def __init__(self, config, mcu_endstop=None):
+    def __init__(self, config, probe_offsets, param_helper, mcu_endstop=None):
         self.printer = config.get_printer()
         self.position_endstop = config.getfloat('z_offset')
         self.stow_on_each_sample = config.getboolean(
@@ -28,12 +28,13 @@ class SettlingProbeEndstopWrapper(ProbeEndstopWrapper):
         else:
             self.mcu_endstop = mcu_endstop
         # Wrappers
-        self.get_mcu = self.mcu_endstop.get_mcu
+        self.query_endstop = self.mcu_endstop.query_endstop
         self.add_stepper = self.mcu_endstop.add_stepper
         self.get_steppers = self.mcu_endstop.get_steppers
         self.home_start = self.mcu_endstop.home_start
         self.home_wait = self.mcu_endstop.home_wait
-        self.query_endstop = self.mcu_endstop.query_endstop
+        self.homing_helper = DescendToEndstopHelper(config, self.mcu_endstop,
+                                                    probe_offsets, param_helper)
         # multi probes state
         self.multi = 'OFF'
 
@@ -55,9 +56,9 @@ class SettlingProbeCommandHelper(ProbeCommandHelper):
         self.probe.probe_session.settling_sample = session_setting
         return ret
 
-class SettlingProbeSessionHelper(ProbeSessionHelper):
+class SettlingProbeSessionHelper(SampleAveragingHelper):
     def __init__(self, probe_config, config, param_helper, start_session_cb):
-        ProbeSessionHelper.__init__(self, probe_config, param_helper, start_session_cb)
+        SampleAveragingHelper.__init__(self, probe_config, param_helper, start_session_cb)
         self.settling_sample = config.getboolean('settling_sample', False)
         self.probe_count = config.getint('sample_count', 1)
 
@@ -75,7 +76,7 @@ class SettlingProbeSessionHelper(ProbeSessionHelper):
         logging.info("Settling sample: %s" % settling_sample)
         if settling_sample:
             self._run_settling_probe(gcmd)
-        return ProbeSessionHelper.run_probe(self, gcmd)
+        return SampleAveragingHelper.run_probe(self, gcmd)
 
 
 class SettlingProbe(PrinterProbe):
@@ -98,22 +99,24 @@ class SettlingProbe(PrinterProbe):
         gcode.register_command('PROBE_ACCURACY', None)
         gcode.register_command('Z_OFFSET_APPLY_PROBE', None)
 
-        # Remove the already-registered 'probe' pin. It will be
-        # replaced by this instance.
         pins = self.printer.lookup_object('pins')
         pins.chips.pop('probe')
-        pins.pin_resolvers.pop('probe')
 
         self.printer = config.get_printer()
-        self.mcu_probe = SettlingProbeEndstopWrapper(probe_config, mcu_probe)
-        self.cmd_helper = SettlingProbeCommandHelper(probe_config, self,
-                                                     self.mcu_probe.query_endstop)
         self.probe_offsets = ProbeOffsetsHelper(probe_config)
         self.param_helper = ProbeParameterHelper(probe_config)
-        self.homing_helper = HomingViaProbeHelper(probe_config, self.mcu_probe, self.probe_offsets,
-                                                  self.param_helper)
+        self.mcu_probe = SettlingProbeEndstopWrapper(probe_config, self.probe_offsets,
+                                                     self.param_helper, mcu_probe.mcu_endstop)
+        self.cmd_helper = SettlingProbeCommandHelper(probe_config, self,
+                                                     self.mcu_probe.query_endstop)
         self.probe_session = SettlingProbeSessionHelper(probe_config, config, self.param_helper,
-                                                        self.homing_helper.start_probe_session)
+                                                        self.mcu_probe.start_probe_session)
+        # Remove the already-registered 'probe' pin. It will be
+        # replaced by this instance.
+        HomingViaProbeHelper(probe_config, self.probe_offsets.get_offsets()[2],
+                                                  self.param_helper)
+        pins.pin_resolvers.pop('probe')
+
         self.printer.register_event_handler("klippy:mcu_identify", self.handle_mcu_identify)
 
     def handle_mcu_identify(self):
