@@ -63,6 +63,16 @@ class SettlingProbeSessionHelper(SampleAveragingHelper):
         self.probe_count = config.getint('sample_count', 1)
 
     def _run_settling_probe(self, gcmd):
+        # If homing is done using the probe as a virtual endstop,
+        # dont't run a settling sample while homing.
+        # We don't know where the toolhead is yet, so we can't safely
+        # execute manual moves required by the settling sample.
+        # Luckily, during homing Klipper constructs a GCode command
+        # just for virtual_endstop homing that is guaranteed to be
+        # "G28"
+        if gcmd.get_command().lower() == "g28":
+            gcmd.respond_info("Settling samples skipped during homing.")
+            return
         toolhead = self.printer.lookup_object('toolhead')
         gcmd.respond_info("Ignored settling sample(s) (%s)..." % self.probe_count)
         params = self.param_helper.get_probe_params(gcmd)
